@@ -293,36 +293,32 @@ def load_css():
                 color: #333333; /* Darker modebar icons */
             }
 
-            /* Floating AI Consultant Button */
-            /* This is the div that contains the actual button */
-            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div[data-testid="stHorizontalBlock"] {
+            /* Floating AI Consultant Button - Targeting the specific Streamlit button element */
+            /* We need to locate the button that will be the FAB */
+            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div:last-child > button {
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
                 z-index: 1000; /* Ensure it stays on top */
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                border-radius: 50px; 
-                background-color: #FF7043; /* Match primary button color */
-                padding: 0; /* Remove internal padding */
-            }
-            
-            /* Target the button inside the floating div */
-            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div[data-testid="stHorizontalBlock"] > button {
+                border-radius: 50px !important; 
+                background-color: #FF7043 !important; /* Match primary button color */
+                color: white !important; /* Ensure text is white */
                 padding: 15px 25px !important; /* Increase padding for a larger button */
                 font-size: 1.1rem !important; /* Larger font size */
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                border-radius: 50px !important; /* Fully rounded */
                 border: none !important;
-                background-color: #FF7043 !important; /* Ensure background matches */
-                color: white !important; /* Ensure text is white */
-                margin: 0; /* Remove default margin */
+                margin: 0;
             }
-            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div[data-testid="stHorizontalBlock"] > button:hover {
+            
+            /* Ensure hover effect for the floating button */
+            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div:last-child > button:hover {
                 background-color: #FF5722 !important; /* Darker on hover */
                 opacity: 1 !important; /* Ensure opacity change on hover */
             }
+
 
             .stAlert {
                 background-color: #FFF3E0;
@@ -427,13 +423,10 @@ if st.session_state.data is not None:
             st.rerun()
     
     # Floating AI Consultant Button - Directly trigger the dialog
-    # Using a unique key and an empty string for the label makes it 'invisible'
-    # but still generates the button element Streamlit needs to be found by CSS
+    # This button is now the ONLY AI Consultant button and is styled to float
     if st.button("💬 Buka AI Consultant", key="open_chat_fab_trigger", type="primary"):
         df_summary_for_chat = df.describe(include='all').to_string()
         run_consultant_chat(df_summary_for_chat)
-    # The actual button is styled by CSS to be floating and visible.
-    # The empty label ensures no duplicate text appears.
 
 
     if not st.session_state.show_analysis:
