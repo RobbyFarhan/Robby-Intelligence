@@ -291,19 +291,20 @@ def load_css():
                 color: #333333; /* Darker modebar icons */
             }
 
-            /* Floating AI Consultant Button - Targeting the specific Streamlit button element by its key-generated ID structure */
-            /* This is a more robust way to ensure it floats and is clickable */
-            div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:last-child > div:nth-last-child(2) > button { /* Targeting the second to last button in the last vertical block for better reliability */
+            /* Floating AI Consultant Button - Adjusted for right-middle */
+            /* We'll use absolute positioning within a fixed container if possible, or target the button directly */
+            div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:last-child > div:nth-last-child(2) > button { 
                 position: fixed;
-                bottom: 20px;
-                right: 20px;
-                z-index: 1000; /* Ensure it stays on top */
+                right: 20px; /* Jarak dari kanan */
+                top: 50%; /* Pindah ke tengah vertikal */
+                transform: translateY(-50%); /* Menyesuaikan posisi agar benar-benar di tengah */
+                z-index: 1000; 
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 border-radius: 50px !important; 
-                background-color: #FF7043 !important; /* Match primary button color */
-                color: white !important; /* Ensure text is white */
-                padding: 15px 25px !important; /* Increase padding for a larger button */
-                font-size: 1.1rem !important; /* Larger font size */
+                background-color: #FF7043 !important; 
+                color: white !important; 
+                padding: 15px 25px !important; 
+                font-size: 1.1rem !important; 
                 display: flex;
                 align-items: center;
                 gap: 8px;
@@ -313,8 +314,8 @@ def load_css():
             
             /* Ensure hover effect for the floating button */
             div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:last-child > div:nth-last-child(2) > button:hover {
-                background-color: #FF5722 !important; /* Darker on hover */
-                opacity: 1 !important; /* Ensure opacity change on hover */
+                background-color: #FF5722 !important; 
+                opacity: 1 !important; 
             }
 
 
