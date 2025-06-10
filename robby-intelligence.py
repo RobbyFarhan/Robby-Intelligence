@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Media Intelligence Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="auto"
+    initial_sidebar_state="auto" # Memastikan sidebar bisa muncul secara otomatis
 )
 
 # --- FUNGSI UTAMA & LOGIKA ---
@@ -207,7 +207,7 @@ def load_css():
             }
             
             /* UI Simplicity: Card styles - White background, orange border/shadow */
-            .chart-container, .insight-hub, .anomaly-card, .uploaded-file-info, .st-emotion-cache-1r6dm7m {
+            .chart-container, .anomaly-card, .uploaded-file-info, .st-emotion-cache-1r6dm7m {
                 border: 1px solid #FFAB40; /* Orange border */
                 background-color: #FFFFFF; /* White background */
                 border-radius: 1rem; 
@@ -228,15 +228,41 @@ def load_css():
                 border-radius: 0.5rem; 
                 padding: 1rem; 
                 margin-top: 1rem; 
-                min-height: 150px; 
+                min-height: 150px; /* MODIFIKASI: Menambahkan tinggi minimum untuk konsistensi */
                 white-space: pre-wrap; 
                 word-wrap: break-word; 
                 font-size: 0.9rem; 
                 color: #333333; /* Dark text for readability */
             }
-            
+            /* MODIFIKASI: Container untuk insight lanjutan agar sejajar */
+            .insight-hub-container {
+                display: flex;
+                flex-wrap: wrap; /* Izinkan wrap jika layar kecil */
+                gap: 1.5rem; /* Jarak antar kolom */
+                margin-bottom: 2rem;
+            }
+            .insight-hub-item {
+                flex: 1; /* Distribusi ruang yang sama */
+                min-width: 300px; /* Lebar minimum agar tidak terlalu sempit */
+                border: 1px solid #FFAB40;
+                background-color: #FFFFFF;
+                border-radius: 1rem;
+                padding: 1.5rem;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                box-sizing: border-box;
+                display: flex; /* Menggunakan flexbox untuk konten di dalam */
+                flex-direction: column; /* Konten bertumpuk secara vertikal */
+            }
+            .insight-hub-item h4 {
+                flex-shrink: 0; /* Hindari judul mengecil */
+                margin-bottom: 1rem; /* Jarak antara judul dan konten */
+            }
+            .insight-hub-item .insight-box {
+                flex-grow: 1; /* Memastikan insight box memenuhi sisa ruang */
+            }
+
             /* UI Simplicity: Heading colors within containers */
-            .chart-container h3, .insight-hub h3, .anomaly-card h3, .insight-hub h4, .uploaded-file-info h3 { 
+            .chart-container h3, .insight-hub-item h3, .anomaly-card h3, .uploaded-file-info h3 { 
                 color: #FF5722; /* Vibrant orange for headings */
                 margin-top: 0; 
                 margin-bottom: 1rem; 
@@ -244,6 +270,10 @@ def load_css():
                 align-items: center; 
                 gap: 0.5rem; 
                 font-weight: 600; 
+            }
+            .insight-hub-item h4 {
+                color: #FF5722; /* Warna untuk sub-judul di insight lanjutan */
+                margin-top: 0;
             }
             .uploaded-file-info { color: #333333; } /* Ensure text is dark */
             .uploaded-file-info p { margin-bottom: 0.5rem; }
@@ -264,10 +294,10 @@ def load_css():
                 padding: 0.75rem 1rem;
                 font-weight: bold;
                 border: none; /* Remove default border */
+                transition: opacity 0.2s ease-in-out;
             }
             .stButton > button:hover {
                 opacity: 0.9; /* Slight hover effect */
-                transition: opacity 0.2s ease-in-out;
             }
             .stButton > button[data-testid="stFormSubmitButton"], .stButton > button[kind="primary"] {
                 background-color: #FF7043; /* Primary orange */
@@ -338,22 +368,24 @@ def load_css():
             .js-plotly-plot .plotly .g-gtitle { /* Chart title */
                 fill: #333333 !important;
             }
-            .js-plotly-plot .plotly .xtick .ytick { /* Axis ticks */
+            .js-plotly-plot .plotly .xtick text,
+            .js-plotly-plot .plotly .ytick text { /* Axis ticks and labels */
                 fill: #333333 !important;
             }
-            .js-plotly-plot .plotly .xaxislayer-above .ytick text,
-            .js-plotly-plot .plotly .yaxislayer-above .ytick text { /* Axis labels */
-                fill: #333333 !important;
-            }
-            .js-plotly-plot .plotly .axislayer .tick text { /* Axis number labels */
+            .js-plotly-plot .plotly .xaxislayer-above .axis-title text,
+            .js-plotly-plot .plotly .yaxislayer-above .axis-title text { /* Axis titles */
                 fill: #333333 !important;
             }
             .js-plotly-plot .plotly .legend .bg { /* Legend background */
-                fill: rgba(255,255,255,0.8) !important;
+                fill: rgba(255,255,255,0.8) !important; /* Slightly transparent white */
             }
             .js-plotly-plot .plotly .legendtext { /* Legend text */
                 fill: #333333 !important;
             }
+            .js-plotly-plot .plotly .annotation-text { /* Text annotations on charts */
+                fill: #333333 !important;
+            }
+
         </style>
     """, unsafe_allow_html=True)
 
@@ -423,7 +455,7 @@ if st.session_state.data is not None:
             st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
             if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
                 for key in list(st.session_state.keys()): del st.session_state[key]
-                st.experimental_set_query_params()
+                st.experimental_set_query_params() 
                 st.rerun()
 
             st.markdown("---")
@@ -500,9 +532,9 @@ if st.session_state.data is not None:
                             plot_bgcolor='#FFFFFF',  # White plot area
                             font_color='#333333',   # Dark font for readability
                             legend_title_text='',
-                            # MODIFIKASI: Pastikan warna teks pada sumbu dan label disesuaikan
-                            xaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333')),
-                            yaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333')),
+                            # Pastikan warna teks pada sumbu dan label disesuaikan
+                            xaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333'), showgrid=False), # Hilangkan grid x-axis
+                            yaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333'), showgrid=False), # Hilangkan grid y-axis
                             title_font=dict(color='#333333') # Chart title font color
                         )
                         st.plotly_chart(fig, use_container_width=True)
@@ -534,36 +566,44 @@ if st.session_state.data is not None:
         st.markdown("---")
         with st.container(border=True):
             st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True)
-            # MODIFIKASI: Memastikan kolom sejajar dan rapi
-            col_insight1, col_insight2, col_insight3 = st.columns(3)
+            # MODIFIKASI: Menggunakan div kustom dengan flexbox untuk layout yang rapi
+            st.markdown('<div class="insight-hub-container">', unsafe_allow_html=True)
+            
+            # Ringkasan Strategi Kampanye
+            st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
+            st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
+            if st.button("Buat Ringkasan", use_container_width=True, type="primary", key="btn_summary"):
+                with st.spinner("Membuat ringkasan..."):
+                    st.session_state.campaign_summary = get_ai_insight(f"Data: {filtered_df.describe().to_json()}. Buat ringkasan eksekutif dan 3 rekomendasi strategis.")
+            st.markdown(f'<div class="insight-box">{st.session_state.campaign_summary or "Klik \'Buat Ringkasan\' untuk mendapatkan rangkuman strategi kampanye berdasarkan data Anda."}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
+            
+            # Ide Konten
+            st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
+            st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
+            if st.button("Buat Ide Postingan", use_container_width=True, type="primary", key="btn_post_idea"):
+                with st.spinner("Mencari ide..."):
+                    best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
+                    st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
+            st.markdown(f'<div class="insight-box">{st.session_state.post_idea or "Klik \'Buat Ide Postingan\' untuk mendapatkan saran konten baru yang inovatif."}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
 
-            with col_insight1:
-                st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
-                if st.button("Buat Ringkasan", use_container_width=True, type="primary", key="btn_summary"):
-                    with st.spinner("Membuat ringkasan..."):
-                        st.session_state.campaign_summary = get_ai_insight(f"Data: {filtered_df.describe().to_json()}. Buat ringkasan eksekutif dan 3 rekomendasi strategis.")
-                st.info(st.session_state.campaign_summary or "Klik 'Buat Ringkasan' untuk mendapatkan rangkuman strategi kampanye berdasarkan data Anda.")
+            # Wawasan Anomali
+            st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
+            st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
+            if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary", key="btn_anomaly"):
+                with st.spinner("Mendeteksi anomali..."):
+                    anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
+                    if not anomalies_df.empty:
+                        prompt_for_anomaly = get_anomaly_insight_prompt(anomalies_df.to_json(orient='records'))
+                        st.session_state.anomaly_insight = get_ai_insight(prompt_for_anomaly)
+                    else:
+                        st.session_state.anomaly_insight = anomaly_summary_text
+            st.markdown(f'<div class="insight-box">{st.session_state.anomaly_insight or "Klik \'Deteksi & Buat Wawasan Anomali\' untuk mencari kejadian tidak biasa."}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
             
-            with col_insight2:
-                st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
-                if st.button("Buat Ide Postingan", use_container_width=True, type="primary", key="btn_post_idea"):
-                    with st.spinner("Mencari ide..."):
-                        best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
-                        st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
-                st.info(st.session_state.post_idea or "Klik 'Buat Ide Postingan' untuk mendapatkan saran konten baru yang inovatif.")
+            st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-container
             
-            with col_insight3:
-                st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
-                if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary", key="btn_anomaly"):
-                    with st.spinner("Mendeteksi anomali..."):
-                        anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
-                        if not anomalies_df.empty:
-                            prompt_for_anomaly = get_anomaly_insight_prompt(anomalies_df.to_json(orient='records'))
-                            st.session_state.anomaly_insight = get_ai_insight(prompt_for_anomaly)
-                        else:
-                            st.session_state.anomaly_insight = anomaly_summary_text
-                st.info(st.session_state.anomaly_insight or "Klik 'Deteksi & Buat Wawasan Anomali' untuk mencari kejadian tidak biasa.")
-        
         st.markdown("---")
         with st.container(border=True):
             st.markdown("<h3>📄 Unduh Laporan Analisis</h3>", unsafe_allow_html=True)
@@ -573,7 +613,7 @@ if st.session_state.data is not None:
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
                 use_container_width=True,
-                # MODIFIKASI: Menggunakan 'secondary' sebagai placeholder dan override dengan CSS
-                type="secondary" 
+                type="secondary" # Type secondary akan di-override oleh CSS kustom
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
+                    
