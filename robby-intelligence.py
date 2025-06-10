@@ -138,7 +138,8 @@ def load_css():
             /* UI Simplicity: Main background colors */
             body { 
                 background-color: #FFFFFF !important; 
-                margin-bottom: 80px; 
+                /* Tambah padding di kanan untuk tombol mengambang */
+                padding-right: 120px; 
             } 
             .stApp { 
                 background-color: #F8F8F8; /* Light grey background */
@@ -291,8 +292,9 @@ def load_css():
                 color: #333333; /* Darker modebar icons */
             }
 
-            /* Floating AI Consultant Button - Adjusted for right-middle */
-            /* We'll use absolute positioning within a fixed container if possible, or target the button directly */
+            /* Floating AI Consultant Button - Explicitly float on the right side */
+            /* We are targeting the button directly using its key,
+               and relying on Streamlit's internal element structure */
             div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:last-child > div:nth-last-child(2) > button { 
                 position: fixed;
                 right: 20px; /* Jarak dari kanan */
@@ -317,7 +319,6 @@ def load_css():
                 background-color: #FF5722 !important; 
                 opacity: 1 !important; 
             }
-
 
             .stAlert {
                 background-color: #FFF3E0;
