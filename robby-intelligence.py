@@ -138,7 +138,6 @@ def load_css():
             /* UI Simplicity: Main background colors */
             body { 
                 background-color: #FFFFFF !important; 
-                /* Ensure enough padding for the floating button */
                 margin-bottom: 80px; 
             } 
             .stApp { 
@@ -153,7 +152,6 @@ def load_css():
                 margin-bottom: 2rem; 
             }
             .main-header h1 { 
-                /* UI Simplicity: Orange gradient for main title */
                 background: -webkit-linear-gradient(45deg, #FF7043, #FF9800); /* Orange shades */
                 -webkit-background-clip: text; 
                 -webkit-text-fill-color: transparent; 
@@ -293,9 +291,9 @@ def load_css():
                 color: #333333; /* Darker modebar icons */
             }
 
-            /* Floating AI Consultant Button - Targeting the specific Streamlit button element */
-            /* We need to locate the button that will be the FAB */
-            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div:last-child > button {
+            /* Floating AI Consultant Button - Targeting the specific Streamlit button element by its key-generated ID structure */
+            /* This is a more robust way to ensure it floats and is clickable */
+            div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:last-child > div:nth-last-child(2) > button { /* Targeting the second to last button in the last vertical block for better reliability */
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
@@ -314,7 +312,7 @@ def load_css():
             }
             
             /* Ensure hover effect for the floating button */
-            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div:last-child > button:hover {
+            div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"]:last-child > div:nth-last-child(2) > button:hover {
                 background-color: #FF5722 !important; /* Darker on hover */
                 opacity: 1 !important; /* Ensure opacity change on hover */
             }
@@ -424,6 +422,7 @@ if st.session_state.data is not None:
     
     # Floating AI Consultant Button - Directly trigger the dialog
     # This button is now the ONLY AI Consultant button and is styled to float
+    # It is placed at the end of the main section to make CSS targeting easier as "last child"
     if st.button("💬 Buka AI Consultant", key="open_chat_fab_trigger", type="primary"):
         df_summary_for_chat = df.describe(include='all').to_string()
         run_consultant_chat(df_summary_for_chat)
