@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Media Intelligence Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="auto" # Memastikan sidebar bisa muncul secara otomatis
+    initial_sidebar_state="auto"
 )
 
 # --- FUNGSI UTAMA & LOGIKA ---
@@ -53,67 +53,16 @@ def get_ai_insight(prompt, model_name='gemini-2.0-flash'):
         st.error(f"Error saat memanggil model {model_name}: {e}.")
         return "Gagal membuat wawasan: Terjadi masalah koneksi atau API."
 
-def detect_anomalies(df):
-    """
-    Mendeteksi anomali (outlier) dalam kolom 'Engagements' menggunakan Z-score.
-    Mengembalikan dataframe anomali. (Fungsi ini tetap ada, tapi tidak dipanggil di UI utama)
-    """
-    if df.empty or 'Engagements' not in df.columns or len(df) < 2:
-        return pd.DataFrame(), "Tidak cukup data untuk mendeteksi anomali."
-    
-    # Hitung Z-score
-    df_copy = df.copy() 
-    df_copy['z_score'] = pd.Series(stats.zscore(df_copy['Engagements'])) 
-    
-    # Ambang batas Z-score untuk anomali (bisa disesuaikan)
-    threshold = 2.5 
-    anomalies = df_copy[df_copy['z_score'] > threshold].sort_values(by='Engagements', ascending=False)
-    
-    if anomalies.empty:
-        return pd.DataFrame(), "Tidak ada anomali signifikan yang terdeteksi dalam data keterlibatan."
-    
-    anomaly_details = []
-    for index, row in anomalies.head(5).iterrows(): 
-        date_str = row['Date'].strftime('%Y-%m-%d') if 'Date' in row and pd.notna(row['Date']) else "Tanggal tidak tersedia"
-        platform_str = row['Platform'] if 'Platform' in row and pd.notna(row['Platform']) else "N/A"
-        sentiment_str = row['Sentiment'] if 'Sentiment' in row and pd.notna(row['Sentiment']) else "N/A"
-        headline_str = row['Headline'][:100] if 'Headline' in row and pd.notna(row['Headline']) else "N/A"
-        
-        anomaly_details.append(f"Pada tanggal {date_str}, terjadi {row['Engagements']} keterlibatan di {platform_str} dengan sentimen {sentiment_str}. Headline: {headline_str}...")
-    
-    return anomalies, "Ditemukan anomali keterlibatan yang signifikan:\n" + "\n".join(anomaly_details)
-
-def get_anomaly_insight_prompt(anomaly_data_summary):
-    """
-    Menghasilkan prompt untuk AI untuk menganalisis anomali. (Fungsi ini tetap ada, tapi tidak dipanggil di UI utama)
-    """
-    return f"""
-    Anda adalah seorang analis media yang fokus pada deteksi anomali.
-    Berdasarkan data anomali berikut:
-    ---
-    {anomaly_data_summary}
-    ---
-    Jelaskan potensi penyebab anomali ini dan berikan 3 rekomendasi tindakan yang dapat diambil.
-    Sajikan wawasan dalam format daftar bernomor yang jelas.
-    """
+# Fungsi detect_anomalies dan get_anomaly_insight_prompt tidak lagi dipanggil di UI,
+# namun tetap dipertahankan jika sewaktu-waktu dibutuhkan untuk logika lain.
 
 def generate_html_report(campaign_summary, chart_insights, chart_figures_dict, charts_to_display_info):
     """
     Membuat laporan HTML dari wawasan dan grafik yang dihasilkan AI.
-    MODIFIKASI: Menghapus post_idea dan anomaly_insight dari parameter
+    MODIFIKASI: Hanya menerima campaign_summary, chart_insights, chart_figures_dict, charts_to_display_info.
     """
     current_date = pd.Timestamp.now().strftime("%d-%m-%Y %H:%M")
 
-    # MODIFIKASI: Menghapus bagian anomaly_section_html
-    # anomaly_section_html = ""
-    # if anomaly_insight and anomaly_insight.strip() and anomaly_insight != "Belum ada wawasan yang dibuat.":
-    #     anomaly_section_html = f"""
-    #     <div class="section">
-    #         <h2>3. Wawasan Anomali</h2>
-    #         <div class="insight-box">{anomaly_insight}</div>
-    #     </div>
-    #     """
-    
     chart_figures_html_sections = ""
     if chart_figures_dict:
         for chart_info in charts_to_display_info:
@@ -133,7 +82,7 @@ def generate_html_report(campaign_summary, chart_insights, chart_figures_dict, c
             if fig:
                 try:
                     fig_for_export = go.Figure(fig)
-                    # Ensure background is white for export
+                    # Pastikan background putih untuk ekspor
                     fig_for_export.update_layout(paper_bgcolor='#FFFFFF', plot_bgcolor='#FFFFFF', font_color='#333333')
                     img_bytes = pio.to_image(fig_for_export, format="png", width=900, height=550, scale=1.5)
                     img_base64 = base64.b64encode(img_bytes).decode('utf-8')
@@ -158,18 +107,32 @@ def generate_html_report(campaign_summary, chart_insights, chart_figures_dict, c
         chart_figures_html_sections = "<p>Belum ada wawasan atau grafik yang dibuat.</p>"
 
     html_content = f"""
-    <!DOCTYPE html><html><head><title>Laporan Media Intelligence Dashboard</title><meta charset="UTF-8">
-    <style>
-        body {{ font-family: 'Inter', sans-serif; line-height: 1.6; color: #333; margin: 20px; background-color: #f4f4f4; }}
-        h1, h2, h3, h4 {{ color: #2c3e50; margin-top: 1.5em; margin-bottom: 0.5em; }}
-        .section {{ background-color: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
-        .insight-sub-section {{ margin-top: 1em; padding-left: 15px; border-left: 3px solid #eee; }}
-        .insight-box {{ background-color: #e9ecef; padding: 10px; border-radius: 5px; font-size: 0.9em; white-space: pre-wrap; word-wrap: break-word; }}
-    </style></head><body>
-    <h1>Laporan Media Intelligence Dashboard</h1><p>Tanggal Laporan: {current_date}</p>
-    <div class="section"><h2>1. Ringkasan Strategi Kampanye</h2><div class="insight-box">{campaign_summary or "Belum ada ringkasan."}</div></div>
-    <h2>2. Wawasan Grafik</h2>{chart_figures_html_sections}</div>
-    </body></html>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Laporan Media Intelligence Dashboard</title>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Inter', sans-serif; line-height: 1.6; color: #333; margin: 20px; background-color: #f4f4f4; }}
+            h1, h2, h3, h4 {{ color: #2c3e50; margin-top: 1.5em; margin-bottom: 0.5em; }}
+            .section {{ background-color: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+            .insight-sub-section {{ margin-top: 1em; padding-left: 15px; border-left: 3px solid #eee; }}
+            .insight-box {{ background-color: #e9ecef; padding: 10px; border-radius: 5px; font-size: 0.9em; white-space: pre-wrap; word-wrap: break-word; }}
+        </style>
+    </head>
+    <body>
+        <h1>Laporan Media Intelligence Dashboard</h1>
+        <p>Tanggal Laporan: {current_date}</p>
+        <div class="section">
+            <h2>1. Ringkasan Strategi Kampanye</h2>
+            <div class="insight-box">{campaign_summary or "Belum ada ringkasan."}</div>
+        </div>
+        <div class="section">
+            <h2>2. Wawasan Grafik</h2>
+            {chart_figures_html_sections}
+        </div>
+    </body>
+    </html>
     """
     return html_content.encode('utf-8')
 
@@ -240,10 +203,12 @@ def load_css():
                 flex-wrap: wrap; /* Izinkan wrap jika layar kecil */
                 gap: 1.5rem; /* Jarak antar kolom */
                 margin-bottom: 2rem;
+                justify-content: center; /* Memusatkan jika hanya ada satu item */
             }
             .insight-hub-item {
                 flex: 1; /* Distribusi ruang yang sama */
                 min-width: 300px; /* Lebar minimum agar tidak terlalu sempit */
+                max-width: 450px; /* Batasi lebar maksimum agar tidak terlalu lebar saat sendiri */
                 border: 1px solid #FFAB40;
                 background-color: #FFFFFF;
                 border-radius: 1rem;
@@ -305,12 +270,12 @@ def load_css():
             }
             /* MODIFIKASI: Tombol unduh laporan menjadi hijau */
             .stButton > button[data-testid="stDownloadButton"] {
-                background-color: #4CAF50 !important; /* Green, using !important for stronger override */
-                color: white !important;
-                border: none !important;
+                background-color: #4CAF50 !important; /* Green, menggunakan !important */
+                color: white !important; /* Putih, menggunakan !important */
+                border: none !important; /* Tanpa border, menggunakan !important */
             }
             .stButton > button[data-testid="stDownloadButton"]:hover {
-                background-color: #45a049 !important; /* Darker green on hover */
+                background-color: #45a049 !important; /* Darker green on hover, menggunakan !important */
             }
 
             .stButton > button[kind="secondary"] {
@@ -364,7 +329,7 @@ def load_css():
             .js-plotly-plot .plotly .modebar-container {
                 color: #333333; /* Darker modebar icons */
             }
-            /* MODIFIKASI: Menyesuaikan warna font pada grafik */
+            /* Menyesuaikan warna font pada grafik */
             .js-plotly-plot .plotly .g-gtitle { /* Chart title */
                 fill: #333333 !important;
             }
@@ -416,7 +381,7 @@ api_configured = configure_gemini_api()
 st.markdown("<div class='main-header'><h1>Media Intelligence Dashboard</h1><p>Nouval Media Consultant</p></div>", unsafe_allow_html=True)
 
 # Inisialisasi State
-for key in ['data', 'chart_insights', 'campaign_summary', 'post_idea', 'anomaly_insight', 'chart_figures', 'last_uploaded_file_name', 'last_uploaded_file_size', 'show_analysis', 'last_filter_state']:
+for key in ['data', 'chart_insights', 'campaign_summary', 'chart_figures', 'last_uploaded_file_name', 'last_uploaded_file_size', 'show_analysis', 'last_filter_state']:
     if key not in st.session_state:
         st.session_state[key] = None if key not in ['chart_insights', 'chart_figures'] else {}
         if key == 'show_analysis': st.session_state[key] = False
@@ -533,9 +498,9 @@ if st.session_state.data is not None:
                             font_color='#333333',   # Dark font for readability
                             legend_title_text='',
                             # Pastikan warna teks pada sumbu dan label disesuaikan
-                            xaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333'), showgrid=False), # Hilangkan grid x-axis
-                            yaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333'), showgrid=False), # Hilangkan grid y-axis
-                            title_font=dict(color='#333333') # Chart title font color
+                            xaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333'), showgrid=False),
+                            yaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333'), showgrid=False),
+                            title_font=dict(color='#333333')
                         )
                         st.plotly_chart(fig, use_container_width=True)
                     else: st.warning("Tidak ada data untuk ditampilkan dengan filter ini.")
@@ -566,7 +531,7 @@ if st.session_state.data is not None:
         st.markdown("---")
         with st.container(border=True):
             st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True)
-            # MODIFIKASI: Menggunakan div kustom dengan flexbox untuk layout yang rapi
+            # Menggunakan div kustom dengan flexbox untuk layout yang rapi
             st.markdown('<div class="insight-hub-container">', unsafe_allow_html=True)
             
             # Ringkasan Strategi Kampanye (Hanya ini yang dipertahankan)
@@ -578,29 +543,6 @@ if st.session_state.data is not None:
             st.markdown(f'<div class="insight-box">{st.session_state.campaign_summary or "Klik \'Buat Ringkasan\' untuk mendapatkan rangkuman strategi kampanye berdasarkan data Anda."}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
             
-            # MODIFIKASI: Menghapus bagian Ide Konten dan Wawasan Anomali
-            # st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
-            # st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
-            # if st.button("Buat Ide Postingan", use_container_width=True, type="primary", key="btn_post_idea"):
-            #     with st.spinner("Mencari ide..."):
-            #         best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
-            #         st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
-            # st.markdown(f'<div class="insight-box">{st.session_state.post_idea or "Klik \'Buat Ide Postingan\' untuk mendapatkan saran konten baru yang inovatif."}</div>', unsafe_allow_html=True)
-            # st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
-
-            # st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
-            # st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
-            # if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary", key="btn_anomaly"):
-            #     with st.spinner("Mendeteksi anomali..."):
-            #         anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
-            #         if not anomalies_df.empty:
-            #             prompt_for_anomaly = get_anomaly_insight_prompt(anomalies_df.to_json(orient='records'))
-            #             st.session_state.anomaly_insight = get_ai_insight(prompt_for_anomaly)
-            #         else:
-            #             st.session_state.anomaly_insight = anomaly_summary_text
-            # st.markdown(f'<div class="insight-box">{st.session_state.anomaly_insight or "Klik \'Deteksi & Buat Wawasan Anomali\' untuk mencari kejadian tidak biasa."}</div>', unsafe_allow_html=True)
-            # st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
-            
             st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-container
             
         st.markdown("---")
@@ -608,7 +550,6 @@ if st.session_state.data is not None:
             st.markdown("<h3>📄 Unduh Laporan Analisis</h3>", unsafe_allow_html=True)
             if st.download_button(
                 "Unduh Laporan Lengkap (HTML)", 
-                # MODIFIKASI: Hanya meneruskan campaign_summary, mengabaikan post_idea dan anomaly_insight
                 data=generate_html_report(st.session_state.campaign_summary, st.session_state.chart_insights, st.session_state.chart_figures, charts_to_display), 
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
@@ -616,3 +557,4 @@ if st.session_state.data is not None:
                 type="secondary" # Type secondary akan di-override oleh CSS kustom
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
+                    
