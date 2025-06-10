@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Media Intelligence Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="auto" # MODIFIKASI: Pastikan sidebar bisa muncul secara otomatis
+    initial_sidebar_state="auto"
 )
 
 # --- FUNGSI UTAMA & LOGIKA ---
@@ -273,6 +273,16 @@ def load_css():
                 background-color: #FF7043; /* Primary orange */
                 color: white;
             }
+            /* MODIFIKASI: Tombol unduh laporan menjadi hijau */
+            .stButton > button[data-testid="stDownloadButton"] {
+                background-color: #4CAF50; /* Green */
+                color: white;
+                border: none;
+            }
+            .stButton > button[data-testid="stDownloadButton"]:hover {
+                background-color: #45a049; /* Darker green on hover */
+            }
+
             .stButton > button[kind="secondary"] {
                 background-color: #FFFFFF;
                 color: #FF7043; /* Orange text */
@@ -323,6 +333,26 @@ def load_css():
             /* Plotly chart font color adjustment for the white background */
             .js-plotly-plot .plotly .modebar-container {
                 color: #333333; /* Darker modebar icons */
+            }
+            /* MODIFIKASI: Menyesuaikan warna font pada grafik */
+            .js-plotly-plot .plotly .g-gtitle { /* Chart title */
+                fill: #333333 !important;
+            }
+            .js-plotly-plot .plotly .xtick .ytick { /* Axis ticks */
+                fill: #333333 !important;
+            }
+            .js-plotly-plot .plotly .xaxislayer-above .ytick text,
+            .js-plotly-plot .plotly .yaxislayer-above .ytick text { /* Axis labels */
+                fill: #333333 !important;
+            }
+            .js-plotly-plot .plotly .axislayer .tick text { /* Axis number labels */
+                fill: #333333 !important;
+            }
+            .js-plotly-plot .plotly .legend .bg { /* Legend background */
+                fill: rgba(255,255,255,0.8) !important;
+            }
+            .js-plotly-plot .plotly .legendtext { /* Legend text */
+                fill: #333333 !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -385,17 +415,15 @@ if st.session_state.data is not None:
         with c_btn2:
             if st.button("▶️ Lihat Hasil Analisis Datamu!", key="show_analysis_btn", use_container_width=True, type="primary"):
                 st.session_state.show_analysis = True
-                # MODIFIKASI: Streamlit harusnya secara otomatis membuka sidebar ketika ada konten
-                # di dalamnya setelah reran. Kita tidak perlu secara eksplisit memanggil st.sidebar.expanded().
                 st.rerun()
     
-    # MODIFIKASI: Tampilkan sidebar hanya jika analisis telah dimulai
+    # Tampilkan sidebar hanya jika analisis telah dimulai
     if st.session_state.show_analysis:
         with st.sidebar:
             st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
             if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
                 for key in list(st.session_state.keys()): del st.session_state[key]
-                st.experimental_set_query_params() # MODIFIKASI: Hapus query params jika ada, untuk reset yang lebih bersih
+                st.experimental_set_query_params()
                 st.rerun()
 
             st.markdown("---")
@@ -415,7 +443,7 @@ if st.session_state.data is not None:
                 date_range = st.date_input("Rentang Tanggal", (min_date, max_date), min_date, max_date, format="DD/MM/YYYY")
                 start_date, end_date = date_range if len(date_range) == 2 else (min_date, max_date)
             
-        # Filter dan proses data - logikanya tetap di luar sidebar
+        # Filter dan proses data
         query = "(Date >= @start_date) & (Date <= @end_date)"
         params = {'start_date': pd.to_datetime(start_date), 'end_date': pd.to_datetime(end_date)}
         if platform: query += " & Platform in @platform"; params['platform'] = platform
@@ -470,8 +498,12 @@ if st.session_state.data is not None:
                         fig.update_layout(
                             paper_bgcolor='#FFFFFF', # White background for charts on orange/white theme
                             plot_bgcolor='#FFFFFF',  # White plot area
-                            font_color='#333333',          # Dark font for readability
-                            legend_title_text=''
+                            font_color='#333333',   # Dark font for readability
+                            legend_title_text='',
+                            # MODIFIKASI: Pastikan warna teks pada sumbu dan label disesuaikan
+                            xaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333')),
+                            yaxis=dict(tickfont=dict(color='#333333'), title_font=dict(color='#333333')),
+                            title_font=dict(color='#333333') # Chart title font color
                         )
                         st.plotly_chart(fig, use_container_width=True)
                     else: st.warning("Tidak ada data untuk ditampilkan dengan filter ini.")
@@ -502,23 +534,27 @@ if st.session_state.data is not None:
         st.markdown("---")
         with st.container(border=True):
             st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True)
-            c1, c2, c3 = st.columns(3)
-            with c1:
+            # MODIFIKASI: Memastikan kolom sejajar dan rapi
+            col_insight1, col_insight2, col_insight3 = st.columns(3)
+
+            with col_insight1:
                 st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
-                if st.button("Buat Ringkasan", use_container_width=True, type="primary"):
+                if st.button("Buat Ringkasan", use_container_width=True, type="primary", key="btn_summary"):
                     with st.spinner("Membuat ringkasan..."):
                         st.session_state.campaign_summary = get_ai_insight(f"Data: {filtered_df.describe().to_json()}. Buat ringkasan eksekutif dan 3 rekomendasi strategis.")
                 st.info(st.session_state.campaign_summary or "Klik 'Buat Ringkasan' untuk mendapatkan rangkuman strategi kampanye berdasarkan data Anda.")
-            with c2:
+            
+            with col_insight2:
                 st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
-                if st.button("Buat Ide Postingan", use_container_width=True, type="primary"):
+                if st.button("Buat Ide Postingan", use_container_width=True, type="primary", key="btn_post_idea"):
                     with st.spinner("Mencari ide..."):
                         best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
                         st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
                 st.info(st.session_state.post_idea or "Klik 'Buat Ide Postingan' untuk mendapatkan saran konten baru yang inovatif.")
-            with c3:
+            
+            with col_insight3:
                 st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
-                if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary"):
+                if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary", key="btn_anomaly"):
                     with st.spinner("Mendeteksi anomali..."):
                         anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
                         if not anomalies_df.empty:
@@ -537,6 +573,7 @@ if st.session_state.data is not None:
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
                 use_container_width=True,
-                type="secondary"
+                # MODIFIKASI: Menggunakan 'secondary' sebagai placeholder dan override dengan CSS
+                type="secondary" 
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
