@@ -7,6 +7,7 @@ import io
 import requests
 import base64
 import plotly.io as pio
+from scipy import stats 
 
 # --- KONFIGURASI HALAMAN & GAYA ---
 st.set_page_config(
@@ -51,6 +52,51 @@ def get_ai_insight(prompt, model_name='gemini-2.0-flash'):
     except Exception as e:
         st.error(f"Error saat memanggil model {model_name}: {e}.")
         return "Gagal membuat wawasan: Terjadi masalah koneksi atau API."
+
+def detect_anomalies(df):
+    """
+    Mendeteksi anomali (outlier) dalam kolom 'Engagements' menggunakan Z-score.
+    Mengembalikan dataframe anomali.
+    """
+    if df.empty or 'Engagements' not in df.columns or len(df) < 2:
+        return pd.DataFrame(), "Tidak cukup data untuk mendeteksi anomali."
+    
+    # Hitung Z-score
+    df_copy = df.copy() 
+    df_copy['z_score'] = pd.Series(stats.zscore(df_copy['Engagements'])) # MODIFIKASI: Pastikan Z-score dihitung dengan benar
+    
+    # Ambang batas Z-score untuk anomali (bisa disesuaikan)
+    threshold = 2.5 
+    anomalies = df_copy[df_copy['z_score'] > threshold].sort_values(by='Engagements', ascending=False)
+    
+    if anomalies.empty:
+        return pd.DataFrame(), "Tidak ada anomali signifikan yang terdeteksi dalam data keterlibatan."
+    
+    anomaly_details = []
+    # MODIFIKASI: Batasi hingga 5 anomali teratas untuk prompt, tambahkan kondisi untuk kolom yang mungkin hilang
+    for index, row in anomalies.head(5).iterrows(): 
+        date_str = row['Date'].strftime('%Y-%m-%d') if 'Date' in row and pd.notna(row['Date']) else "Tanggal tidak tersedia"
+        platform_str = row['Platform'] if 'Platform' in row and pd.notna(row['Platform']) else "N/A"
+        sentiment_str = row['Sentiment'] if 'Sentiment' in row and pd.notna(row['Sentiment']) else "N/A"
+        headline_str = row['Headline'][:100] if 'Headline' in row and pd.notna(row['Headline']) else "N/A"
+        
+        anomaly_details.append(f"Pada tanggal {date_str}, terjadi {row['Engagements']} keterlibatan di {platform_str} dengan sentimen {sentiment_str}. Headline: {headline_str}...")
+    
+    return anomalies, "Ditemukan anomali keterlibatan yang signifikan:\n" + "\n".join(anomaly_details)
+
+def get_anomaly_insight_prompt(anomaly_data_summary):
+    """
+    Menghasilkan prompt untuk AI untuk menganalisis anomali.
+    """
+    return f"""
+    Anda adalah seorang analis media yang fokus pada deteksi anomali.
+    Berdasarkan data anomali berikut:
+    ---
+    {anomaly_data_summary}
+    ---
+    Jelaskan potensi penyebab anomali ini dan berikan 3 rekomendasi tindakan yang dapat diambil.
+    Sajikan wawasan dalam format daftar bernomor yang jelas.
+    """
 
 def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_insights, chart_figures_dict, charts_to_display_info):
     """
@@ -302,39 +348,6 @@ def parse_csv(uploaded_file):
         st.error(f"Gagal memproses file CSV: {e}")
         return None
 
-@st.dialog("AI Media Consultant")
-def run_consultant_chat(df_summary):
-    """Menjalankan antarmuka chat di dalam st.dialog."""
-    st.markdown("Tanyakan apa pun tentang data media Anda atau strategi umum.")
-
-    if "consultant_messages" not in st.session_state:
-        st.session_state.consultant_messages = [{"role": "assistant", "content": "Halo! Saya adalah konsultan media AI Anda. Apa yang bisa saya bantu analisis hari ini?"}]
-
-    for msg in st.session_state.consultant_messages:
-        st.chat_message(msg["role"]).write(msg["content"])
-
-    if prompt := st.chat_input("Ketik pertanyaan Anda..."):
-        st.session_state.consultant_messages.append({"role": "user", "content": prompt})
-        st.chat_message("user").write(prompt)
-
-        full_prompt = f"""
-        Anda adalah seorang konsultan media AI yang ahli, ramah, dan profesional. 
-        Tugas Anda adalah menjawab pertanyaan pengguna terkait analisis media, strategi kampanye, atau interpretasi data.
-        Gunakan ringkasan data berikut sebagai konteks jika relevan: 
-        ---
-        {df_summary}
-        ---
-        Riwayat percakapan sejauh ini: {st.session_state.consultant_messages}
-        ---
-        Jawab pertanyaan pengguna berikut: "{prompt}"
-        """
-        
-        with st.chat_message("assistant"):
-            with st.spinner("Memikirkan jawaban..."):
-                response = get_ai_insight(full_prompt)
-                st.session_state.consultant_messages.append({"role": "assistant", "content": response})
-                st.write(response)
-
 # --- UI STREAMLIT ---
 load_css()
 api_configured = configure_gemini_api()
@@ -367,16 +380,12 @@ if st.session_state.data is not None:
     df = st.session_state.data
     st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    # MODIFIKASI: Menghapus kolom kedua yang sebelumnya digunakan untuk tombol "Buka AI Consultant"
+    col1 = st.columns(1)[0] # Hanya satu kolom
     with col1:
         if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
-    with col2:
-        if st.button("💬 Buka AI Consultant", key="open_chat_btn", use_container_width=True, type="primary"):
-            df_summary_for_chat = df.describe(include='all').to_string()
-            run_consultant_chat(df_summary_for_chat)
-
 
     if not st.session_state.show_analysis:
         st.markdown("---")
@@ -490,7 +499,7 @@ if st.session_state.data is not None:
         st.markdown("---")
         with st.container(border=True):
             st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True)
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns(3) # MODIFIKASI: Menambahkan kolom ketiga untuk anomali
             with c1:
                 st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
                 if st.button("Buat Ringkasan", use_container_width=True, type="primary"):
@@ -504,6 +513,17 @@ if st.session_state.data is not None:
                         best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
                         st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
                 st.info(st.session_state.post_idea or "Klik 'Buat Ide Postingan' untuk mendapatkan saran konten baru yang inovatif.")
+            with c3: # MODIFIKASI: Kolom baru untuk wawasan anomali
+                st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
+                if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary"):
+                    with st.spinner("Mendeteksi anomali..."):
+                        anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
+                        if not anomalies_df.empty:
+                            prompt_for_anomaly = get_anomaly_insight_prompt(anomalies_df.to_json(orient='records'))
+                            st.session_state.anomaly_insight = get_ai_insight(prompt_for_anomaly)
+                        else:
+                            st.session_state.anomaly_insight = anomaly_summary_text
+                st.info(st.session_state.anomaly_insight or "Klik 'Deteksi & Buat Wawasan Anomali' untuk mencari kejadian tidak biasa.")
         
         st.markdown("---")
         with st.container(border=True):
