@@ -5,15 +5,15 @@ import plotly.graph_objects as go
 import google.generativeai as genai
 import io
 import requests
-import base64 # Diperlukan untuk mengkodekan gambar ke Base64
-import plotly.io as pio # Diperlukan untuk mengekspor grafik Plotly sebagai gambar
+import base64
+import plotly.io as pio
 
 # --- KONFIGURASI HALAMAN & GAYA ---
 st.set_page_config(
     page_title="Media Intelligence Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed" # UI Simplicity: Default collapsed for cleaner initial view
 )
 
 # --- FUNGSI UTAMA & LOGIKA ---
@@ -23,7 +23,7 @@ def configure_gemini_api():
     Mengkonfigurasi API Gemini menggunakan kunci API.
     Dalam aplikasi produksi, gunakan st.secrets.
     """
-    api_key = "AIzaSyC0VUu6xTFIwH3aP2R7tbhyu4O8m1ICxn4"
+    api_key = "AIzaSyC0VUu6xTFIwH3aP2R7tbhyu4O8m1ICxn4" # Replace with st.secrets["GEMINI_API_KEY"] in production
     if not api_key:
         st.warning("API Key Gemini tidak ditemukan. Beberapa fitur AI mungkin tidak berfungsi.")
         return False
@@ -86,6 +86,7 @@ def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_ins
             if fig:
                 try:
                     fig_for_export = go.Figure(fig)
+                    # Ensure background is white for export
                     fig_for_export.update_layout(paper_bgcolor='#FFFFFF', plot_bgcolor='#FFFFFF', font_color='#333333')
                     img_bytes = pio.to_image(fig_for_export, format="png", width=900, height=550, scale=1.5)
                     img_base64 = base64.b64encode(img_bytes).decode('utf-8')
@@ -127,19 +128,20 @@ def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_ins
     """
     return html_content.encode('utf-8')
 
-# PERUBAHAN FONT HANYA DI DALAM FUNGSI INI
+# PERUBAHAN FONT & UI HANYA DI DALAM FUNGSI INI
 def load_css():
     """Menyuntikkan CSS kustom dengan gradien hijau."""
     st.markdown("""
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap');
-            body { background-color: #042f2e !important; }
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap'); /* Add Inter font */
+            body { background-color: #042f2e !important; } /* Ensure full body background */
             .stApp { 
                 background-image: radial-gradient(at top left, #104e4a, #042f2e, black); 
                 color: #e5e7eb; 
+                font-family: 'Inter', sans-serif; /* UI Simplicity: Use Inter for general text */
             }
             .main-header { 
-                font-family: 'Plus Jakarta Sans', sans-serif; /* FONT BARU */
+                font-family: 'Plus Jakarta Sans', sans-serif;
                 text-align: center; 
                 margin-bottom: 2rem; 
             }
@@ -148,17 +150,18 @@ def load_css():
                 -webkit-background-clip: text; 
                 -webkit-text-fill-color: transparent; 
                 font-size: 2.75rem; 
-                font-weight: 800; /* Disesuaikan dengan ketebalan font baru */
+                font-weight: 800; /* UI Simplicity: Ensure bold for main header */
             }
             .main-header p { color: #9ca3af; font-size: 1.1rem; }
-            .chart-container, .insight-hub, .anomaly-card, .uploaded-file-info { 
+            /* UI Simplicity: Combined common card styles for consistency */
+            .chart-container, .insight-hub, .anomaly-card, .uploaded-file-info, .st-emotion-cache-1r6dm7m { /* Targets st.container, st.columns, etc */
                 border: 1px solid #134E4A;
                 background-color: rgba(16, 56, 48, 0.7);
                 backdrop-filter: blur(15px); 
                 border-radius: 1rem; 
                 padding: 1.5rem; 
-                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); 
                 margin-bottom: 2rem; 
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); 
                 box-sizing: border-box; 
             }
             .anomaly-card { 
@@ -175,9 +178,10 @@ def load_css():
                 white-space: pre-wrap; 
                 word-wrap: break-word; 
                 font-size: 0.9rem; 
+                color: #e5e7eb; /* UI Simplicity: Ensure insight text is readable */
             }
             .chart-container h3, .insight-hub h3, .anomaly-card h3, .insight-hub h4, .uploaded-file-info h3 { 
-                color: #34D399;
+                color: #34D399; /* UI Simplicity: Consistent heading color */
                 margin-top: 0; 
                 margin-bottom: 1rem; 
                 display: flex; 
@@ -187,6 +191,59 @@ def load_css():
             }
             .uploaded-file-info { color: #e5e7eb; }
             .uploaded-file-info p { margin-bottom: 0.5rem; }
+
+            /* Streamlit specific overrides for better UI Simplicity */
+            .stFileUploader > div {
+                border: 2px dashed #064E3B;
+                border-radius: 1rem;
+                padding: 2rem;
+                background-color: rgba(16, 56, 48, 0.7);
+                margin-top: 1rem;
+            }
+            .stFileUploader label { color: #34D399; font-size: 1.1rem; font-weight: 600; }
+            .stButton > button {
+                border-radius: 0.5rem;
+                padding: 0.75rem 1rem;
+                font-weight: bold;
+            }
+            .stButton > button:hover {
+                opacity: 0.8;
+                transition: opacity 0.2s ease-in-out;
+            }
+            .stSelectbox > div > div > div { /* Target the selectbox dropdown */
+                background-color: rgba(4, 47, 46, 0.9); /* Darker background for dropdown */
+                color: #e5e7eb;
+                border: 1px solid #064E3B;
+            }
+            .stSelectbox > label { color: #34D399; font-weight: 600; }
+            .stExpander > div > div {
+                background-color: rgba(16, 56, 48, 0.7); /* Match card background */
+                border: 1px solid #134E4A;
+                border-radius: 1rem;
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .stExpander > div > div > div > p {
+                color: #34D399; /* Expander header color */
+                font-weight: 600;
+                font-size: 1.1rem;
+            }
+            .stExpander div[data-testid="stExpanderForm"] { /* Inner content of expander */
+                padding-top: 0.5rem;
+            }
+            .st-emotion-cache-10o5h6q { /* Targets text input */
+                background-color: rgba(4, 47, 46, 0.75);
+                border: 1px solid #064E3B;
+                border-radius: 0.5rem;
+                color: #e5e7eb;
+            }
+            .st-emotion-cache-10o5h6q input {
+                color: #e5e7eb;
+            }
+            .st-emotion-cache-10o5h6q label {
+                color: #34D399;
+                font-weight: 600;
+            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -257,9 +314,10 @@ for key in ['data', 'chart_insights', 'campaign_summary', 'post_idea', 'anomaly_
 
 # Tampilan Unggah File
 if st.session_state.data is None: 
-    c1, c2, c3 = st.columns([1,2,1])
-    with c2:
-        with st.container(border=True):
+    # UI Simplicity: Centralize file uploader
+    c1, c2, c3 = st.columns([1,2,1]) 
+    with c2: # Use middle column for centered Uploader
+        with st.container(border=False): # Removed border for cleaner look, let custom CSS handle it
             st.markdown("### ☁️ Unggah File CSV Anda")
             uploaded_file = st.file_uploader("Pastikan file memiliki kolom 'Date', 'Engagements', 'Sentiment', 'Platform', 'Media Type', 'Location', dll.", type="csv", label_visibility="collapsed")
             if uploaded_file:
@@ -277,21 +335,23 @@ if st.session_state.data is not None:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True):
+        if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"): # Made secondary for distinction
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
     with col2:
-        if st.button("💬 Buka AI Consultant", key="open_chat_btn", use_container_width=True, type="secondary"):
+        if st.button("💬 Buka AI Consultant", key="open_chat_btn", use_container_width=True, type="primary"): # Made primary as it's a key feature
             df_summary_for_chat = df.describe(include='all').to_string()
             run_consultant_chat(df_summary_for_chat)
 
 
     if not st.session_state.show_analysis:
+        st.markdown("---") # UI Simplicity: Add a separator
         if st.button("▶️ Lihat Hasil Analisis Datamu!", key="show_analysis_btn", use_container_width=True, type="primary"):
             st.session_state.show_analysis = True
             st.rerun()
 
     if st.session_state.show_analysis:
+        st.markdown("---") # UI Simplicity: Add a separator after previous buttons
         with st.expander("⚙️ Filter Data & Opsi Tampilan", expanded=True):
             def get_multiselect(label, options):
                 all_option = f"Pilih Semua {label}"
@@ -321,8 +381,16 @@ if st.session_state.data is not None:
         filtered_df = df.query(query, local_dict=params)
 
         # Tampilan Grafik & AI
-        charts_to_display = [{"key": "sentiment", "title": "Analisis Sentimen"}, {"key": "trend", "title": "Tren Keterlibatan"}, {"key": "platform", "title": "Keterlibatan per Platform"}, {"key": "mediaType", "title": "Distribusi Jenis Media"}, {"key": "location", "title": "5 Lokasi Teratas"}]
-        chart_cols = st.columns(2)
+        charts_to_display = [
+            {"key": "sentiment", "title": "Analisis Sentimen"},
+            {"key": "trend", "title": "Tren Keterlibatan"},
+            {"key": "platform", "title": "Keterlibatan per Platform"},
+            {"key": "mediaType", "title": "Distribusi Jenis Media"},
+            {"key": "location", "title": "5 Lokasi Teratas"}
+        ]
+        
+        # UI Simplicity: Use columns for chart display
+        chart_cols = st.columns(2) 
         
         def get_chart_prompt(key, data_json, answer_style):
             prompts = {"sentiment": "distribusi sentimen", "trend": "tren keterlibatan", "platform": "keterlibatan per platform", "mediaType": "distribusi jenis media", "location": "keterlibatan per lokasi"}
@@ -338,9 +406,9 @@ if st.session_state.data is not None:
             return f"{persona} Analisis data mengenai {prompts.get(key, 'data')}: {data_json}. Sajikan wawasan dalam format daftar bernomor yang jelas."
 
         for i, chart in enumerate(charts_to_display):
-            with chart_cols[i % 2]:
+            with chart_cols[i % 2]: # Place charts in a 2-column layout
                 with st.container(border=True):
-                    st.markdown(f'<h3>{chart["title"]}</h3>', unsafe_allow_html=True)
+                    st.markdown(f'<h3>📊 {chart["title"]}</h3>', unsafe_allow_html=True) # UI Simplicity: Add icon to chart titles
                     fig, data_for_prompt = None, None
                     if not filtered_df.empty:
                         try:
@@ -354,7 +422,12 @@ if st.session_state.data is not None:
                     
                     if fig:
                         st.session_state.chart_figures[chart["key"]] = fig
-                        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#e5e7eb', legend_title_text='')
+                        fig.update_layout(
+                            paper_bgcolor='rgba(0,0,0,0)', # UI Simplicity: Transparent background
+                            plot_bgcolor='rgba(0,0,0,0)',  # UI Simplicity: Transparent plot area
+                            font_color='#e5e7eb',          # UI Simplicity: Light font for dark theme
+                            legend_title_text=''
+                        )
                         st.plotly_chart(fig, use_container_width=True)
                     else: st.warning("Tidak ada data untuk ditampilkan dengan filter ini.")
                     
@@ -365,7 +438,7 @@ if st.session_state.data is not None:
                         key=f"sel_{chart['key']}"
                     )
 
-                    if st.button("✨ Generate Insight dengan AI", key=f"btn_{chart['key']}"):
+                    if st.button("✨ Generate Insight dengan AI", key=f"btn_{chart['key']}", use_container_width=True, type="primary"):
                         if data_for_prompt:
                             with st.spinner(f"Menganalisis {chart['title']} dengan gaya '{selected_style}'..."):
                                 prompt = get_chart_prompt(chart['key'], data_for_prompt, selected_style)
@@ -381,24 +454,33 @@ if st.session_state.data is not None:
                     st.markdown(f'<div class="insight-box">{insight_text}</div>', unsafe_allow_html=True)
 
         # Wawasan Umum & Unduh
+        st.markdown("---") # UI Simplicity: Separator
         with st.container(border=True):
-            st.markdown("<h3>🧠Insight Lanjutan </h3>", unsafe_allow_html=True)
+            st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True) # UI Simplicity: Add icon
             c1, c2 = st.columns(2)
             with c1:
-                st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
-                if st.button("Buat Ringkasan", use_container_width=True):
+                st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True) # UI Simplicity: Add icon
+                if st.button("Buat Ringkasan", use_container_width=True, type="primary"):
                     with st.spinner("Membuat ringkasan..."):
                         st.session_state.campaign_summary = get_ai_insight(f"Data: {filtered_df.describe().to_json()}. Buat ringkasan eksekutif dan 3 rekomendasi strategis.")
-                st.info(st.session_state.campaign_summary or "Klik untuk ringkasan strategis.")
+                st.info(st.session_state.campaign_summary or "Klik 'Buat Ringkasan' untuk mendapatkan rangkuman strategi kampanye berdasarkan data Anda.") # UI Simplicity: More informative placeholder
             with c2:
-                st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
-                if st.button("Buat Ide Postingan", use_container_width=True):
+                st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True) # UI Simplicity: Add icon
+                if st.button("Buat Ide Postingan", use_container_width=True, type="primary"):
                     with st.spinner("Mencari ide..."):
                         best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
                         st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
-                st.info(st.session_state.post_idea or "Klik untuk ide konten baru.")
+                st.info(st.session_state.post_idea or "Klik 'Buat Ide Postingan' untuk mendapatkan saran konten baru yang inovatif.") # UI Simplicity: More informative placeholder
         
+        st.markdown("---") # UI Simplicity: Separator
         with st.container(border=True):
-            st.markdown("<h3>📄 Unduh Laporan Analisis</h3>", unsafe_allow_html=True)
-            if st.download_button("Unduh Laporan", data=generate_html_report(st.session_state.campaign_summary, st.session_state.post_idea, st.session_state.anomaly_insight, st.session_state.chart_insights, st.session_state.chart_figures, charts_to_display), file_name="Laporan_Media_Intelligence.html", mime="text/html", use_container_width=True):
-                st.success("Laporan berhasil dibuat!")
+            st.markdown("<h3>📄 Unduh Laporan Analisis</h3>", unsafe_allow_html=True) # UI Simplicity: Add icon
+            if st.download_button(
+                "Unduh Laporan Lengkap (HTML)", 
+                data=generate_html_report(st.session_state.campaign_summary, st.session_state.post_idea, st.session_state.anomaly_insight, st.session_state.chart_insights, st.session_state.chart_figures, charts_to_display), 
+                file_name="Laporan_Media_Intelligence.html", 
+                mime="text/html", 
+                use_container_width=True,
+                type="secondary" # UI Simplicity: Make download button secondary
+            ):
+                st.success("Laporan berhasil dibuat dan siap diunduh!")
