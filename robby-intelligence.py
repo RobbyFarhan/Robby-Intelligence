@@ -389,7 +389,7 @@ def parse_csv(uploaded_file):
 load_css()
 api_configured = configure_gemini_api()
 
-st.markdown("<div class='main-header'><h1>Media Intelligence Dashboard</h1><p>Nouval Media Consultant</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'><h1>Media Intelligence Dashboard</h1><p>Rooby Farhan Intelligence</p></div>", unsafe_allow_html=True)
 
 # Inisialisasi State
 for key in ['data', 'chart_insights', 'campaign_summary', 'chart_figures', 'last_uploaded_file_name', 'last_uploaded_file_size', 'show_analysis', 'last_filter_state']:
@@ -428,14 +428,14 @@ if st.session_state.data is not None:
     # Tampilkan sidebar hanya jika analisis telah dimulai
     if st.session_state.show_analysis:
         with st.sidebar:
-            st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
-            if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
+            st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Kamu Berhasil Teruploadf! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
+            if st.button("Hapus File Kamu", key="clear_file_btn", use_container_width=True, type="secondary"):
                 for key in list(st.session_state.keys()): del st.session_state[key]
                 st.experimental_set_query_params() 
                 st.rerun()
 
             st.markdown("---")
-            with st.expander("⚙️ Filter Data & Opsi Tampilan", expanded=True):
+            with st.expander("⚙️ Filter Data", expanded=True):
                 def get_multiselect(label, options):
                     all_option = f"Pilih Semua {label}"
                     selection = st.multiselect(label, [all_option] + options)
@@ -517,12 +517,12 @@ if st.session_state.data is not None:
                     
                     answer_styles = ["gemini-2.0-flash", "Mistral 7B Instruct", "llama-3.3-8b-instruct"]
                     selected_style = st.selectbox(
-                        "Pilih Gaya Jawaban AI:",
+                        "Pilih Model AI:",
                         answer_styles,
                         key=f"sel_{chart['key']}"
                     )
 
-                    if st.button("✨ Generate Insight dengan AI", key=f"btn_{chart['key']}", use_container_width=True, type="primary"):
+                    if st.button("Lihat Insight", key=f"btn_{chart['key']}", use_container_width=True, type="primary"):
                         if data_for_prompt:
                             with st.spinner(f"Menganalisis {chart['title']} dengan gaya '{selected_style}'..."):
                                 prompt = get_chart_prompt(chart['key'], data_for_prompt, selected_style)
@@ -534,7 +534,7 @@ if st.session_state.data is not None:
                                 st.rerun()
                     
                     chart_specific_insights = st.session_state.chart_insights.get(chart.get("key"), {})
-                    insight_text = chart_specific_insights.get(selected_style, "Pilih model AI untuk menampilkan insight untukmu!.")
+                    insight_text = chart_specific_insights.get(selected_style, "Pilih model AI untuk melihat insight.")
                     st.markdown(f'<div class="insight-box">{insight_text}</div>', unsafe_allow_html=True)
 
         # Wawasan Umum & Unduh
