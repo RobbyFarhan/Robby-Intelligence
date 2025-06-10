@@ -56,7 +56,7 @@ def get_ai_insight(prompt, model_name='gemini-2.0-flash'):
 def detect_anomalies(df):
     """
     Mendeteksi anomali (outlier) dalam kolom 'Engagements' menggunakan Z-score.
-    Mengembalikan dataframe anomali.
+    Mengembalikan dataframe anomali. (Fungsi ini tetap ada, tapi tidak dipanggil di UI utama)
     """
     if df.empty or 'Engagements' not in df.columns or len(df) < 2:
         return pd.DataFrame(), "Tidak cukup data untuk mendeteksi anomali."
@@ -85,7 +85,7 @@ def detect_anomalies(df):
 
 def get_anomaly_insight_prompt(anomaly_data_summary):
     """
-    Menghasilkan prompt untuk AI untuk menganalisis anomali.
+    Menghasilkan prompt untuk AI untuk menganalisis anomali. (Fungsi ini tetap ada, tapi tidak dipanggil di UI utama)
     """
     return f"""
     Anda adalah seorang analis media yang fokus pada deteksi anomali.
@@ -97,20 +97,22 @@ def get_anomaly_insight_prompt(anomaly_data_summary):
     Sajikan wawasan dalam format daftar bernomor yang jelas.
     """
 
-def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_insights, chart_figures_dict, charts_to_display_info):
+def generate_html_report(campaign_summary, chart_insights, chart_figures_dict, charts_to_display_info):
     """
     Membuat laporan HTML dari wawasan dan grafik yang dihasilkan AI.
+    MODIFIKASI: Menghapus post_idea dan anomaly_insight dari parameter
     """
     current_date = pd.Timestamp.now().strftime("%d-%m-%Y %H:%M")
 
-    anomaly_section_html = ""
-    if anomaly_insight and anomaly_insight.strip() and anomaly_insight != "Belum ada wawasan yang dibuat.":
-        anomaly_section_html = f"""
-        <div class="section">
-            <h2>3. Wawasan Anomali</h2>
-            <div class="insight-box">{anomaly_insight}</div>
-        </div>
-        """
+    # MODIFIKASI: Menghapus bagian anomaly_section_html
+    # anomaly_section_html = ""
+    # if anomaly_insight and anomaly_insight.strip() and anomaly_insight != "Belum ada wawasan yang dibuat.":
+    #     anomaly_section_html = f"""
+    #     <div class="section">
+    #         <h2>3. Wawasan Anomali</h2>
+    #         <div class="insight-box">{anomaly_insight}</div>
+    #     </div>
+    #     """
     
     chart_figures_html_sections = ""
     if chart_figures_dict:
@@ -166,9 +168,7 @@ def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_ins
     </style></head><body>
     <h1>Laporan Media Intelligence Dashboard</h1><p>Tanggal Laporan: {current_date}</p>
     <div class="section"><h2>1. Ringkasan Strategi Kampanye</h2><div class="insight-box">{campaign_summary or "Belum ada ringkasan."}</div></div>
-    <div class="section"><h2>2. Ide Konten AI</h2><div class="insight-box">{post_idea or "Belum ada ide."}</div></div>
-    {anomaly_section_html}
-    <div class="section"><h2>4. Wawasan Grafik</h2>{chart_figures_html_sections}</div>
+    <h2>2. Wawasan Grafik</h2>{chart_figures_html_sections}</div>
     </body></html>
     """
     return html_content.encode('utf-8')
@@ -228,7 +228,7 @@ def load_css():
                 border-radius: 0.5rem; 
                 padding: 1rem; 
                 margin-top: 1rem; 
-                min-height: 150px; /* MODIFIKASI: Menambahkan tinggi minimum untuk konsistensi */
+                min-height: 150px; /* Menambahkan tinggi minimum untuk konsistensi */
                 white-space: pre-wrap; 
                 word-wrap: break-word; 
                 font-size: 0.9rem; 
@@ -305,12 +305,12 @@ def load_css():
             }
             /* MODIFIKASI: Tombol unduh laporan menjadi hijau */
             .stButton > button[data-testid="stDownloadButton"] {
-                background-color: #4CAF50; /* Green */
-                color: white;
-                border: none;
+                background-color: #4CAF50 !important; /* Green, using !important for stronger override */
+                color: white !important;
+                border: none !important;
             }
             .stButton > button[data-testid="stDownloadButton"]:hover {
-                background-color: #45a049; /* Darker green on hover */
+                background-color: #45a049 !important; /* Darker green on hover */
             }
 
             .stButton > button[kind="secondary"] {
@@ -569,7 +569,7 @@ if st.session_state.data is not None:
             # MODIFIKASI: Menggunakan div kustom dengan flexbox untuk layout yang rapi
             st.markdown('<div class="insight-hub-container">', unsafe_allow_html=True)
             
-            # Ringkasan Strategi Kampanye
+            # Ringkasan Strategi Kampanye (Hanya ini yang dipertahankan)
             st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
             st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
             if st.button("Buat Ringkasan", use_container_width=True, type="primary", key="btn_summary"):
@@ -578,29 +578,28 @@ if st.session_state.data is not None:
             st.markdown(f'<div class="insight-box">{st.session_state.campaign_summary or "Klik \'Buat Ringkasan\' untuk mendapatkan rangkuman strategi kampanye berdasarkan data Anda."}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
             
-            # Ide Konten
-            st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
-            st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
-            if st.button("Buat Ide Postingan", use_container_width=True, type="primary", key="btn_post_idea"):
-                with st.spinner("Mencari ide..."):
-                    best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
-                    st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
-            st.markdown(f'<div class="insight-box">{st.session_state.post_idea or "Klik \'Buat Ide Postingan\' untuk mendapatkan saran konten baru yang inovatif."}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
+            # MODIFIKASI: Menghapus bagian Ide Konten dan Wawasan Anomali
+            # st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
+            # st.markdown("<h4>💡 Buatkan Ide Konten</h4>", unsafe_allow_html=True)
+            # if st.button("Buat Ide Postingan", use_container_width=True, type="primary", key="btn_post_idea"):
+            #     with st.spinner("Mencari ide..."):
+            #         best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
+            #         st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
+            # st.markdown(f'<div class="insight-box">{st.session_state.post_idea or "Klik \'Buat Ide Postingan\' untuk mendapatkan saran konten baru yang inovatif."}</div>', unsafe_allow_html=True)
+            # st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
 
-            # Wawasan Anomali
-            st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
-            st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
-            if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary", key="btn_anomaly"):
-                with st.spinner("Mendeteksi anomali..."):
-                    anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
-                    if not anomalies_df.empty:
-                        prompt_for_anomaly = get_anomaly_insight_prompt(anomalies_df.to_json(orient='records'))
-                        st.session_state.anomaly_insight = get_ai_insight(prompt_for_anomaly)
-                    else:
-                        st.session_state.anomaly_insight = anomaly_summary_text
-            st.markdown(f'<div class="insight-box">{st.session_state.anomaly_insight or "Klik \'Deteksi & Buat Wawasan Anomali\' untuk mencari kejadian tidak biasa."}</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
+            # st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
+            # st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
+            # if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary", key="btn_anomaly"):
+            #     with st.spinner("Mendeteksi anomali..."):
+            #         anomalies_df, anomaly_summary_text = detect_anomalies(filtered_df)
+            #         if not anomalies_df.empty:
+            #             prompt_for_anomaly = get_anomaly_insight_prompt(anomalies_df.to_json(orient='records'))
+            #             st.session_state.anomaly_insight = get_ai_insight(prompt_for_anomaly)
+            #         else:
+            #             st.session_state.anomaly_insight = anomaly_summary_text
+            # st.markdown(f'<div class="insight-box">{st.session_state.anomaly_insight or "Klik \'Deteksi & Buat Wawasan Anomali\' untuk mencari kejadian tidak biasa."}</div>', unsafe_allow_html=True)
+            # st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-item
             
             st.markdown('</div>', unsafe_allow_html=True) # Tutup insight-hub-container
             
@@ -609,11 +608,11 @@ if st.session_state.data is not None:
             st.markdown("<h3>📄 Unduh Laporan Analisis</h3>", unsafe_allow_html=True)
             if st.download_button(
                 "Unduh Laporan Lengkap (HTML)", 
-                data=generate_html_report(st.session_state.campaign_summary, st.session_state.post_idea, st.session_state.anomaly_insight, st.session_state.chart_insights, st.session_state.chart_figures, charts_to_display), 
+                # MODIFIKASI: Hanya meneruskan campaign_summary, mengabaikan post_idea dan anomaly_insight
+                data=generate_html_report(st.session_state.campaign_summary, st.session_state.chart_insights, st.session_state.chart_figures, charts_to_display), 
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
                 use_container_width=True,
                 type="secondary" # Type secondary akan di-override oleh CSS kustom
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
-                    
