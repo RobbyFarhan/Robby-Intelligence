@@ -260,30 +260,30 @@ def load_css():
             .stButton > button:hover {
                 opacity: 0.9; 
             }
-            /* MODIFIKASI: Semua tombol primer (default) menjadi hijau */
+            /* Semua tombol primer (default) menjadi hijau */
             .stButton > button[data-testid="stFormSubmitButton"], 
             .stButton > button[kind="primary"] {
                 background-color: #4CAF50 !important; /* Green, menggunakan !important */
                 color: white !important; /* Putih, menggunakan !important */
                 border: none !important; /* Tanpa border, menggunakan !important */
             }
-            /* MODIFIKASI: Hover untuk tombol primer */
+            /* Hover untuk tombol primer */
             .stButton > button[data-testid="stFormSubmitButton"]:hover,
             .stButton > button[kind="primary"]:hover {
                 background-color: #45a049 !important; /* Darker green on hover */
             }
 
-            /* Tombol unduh laporan (yang sebelumnya sudah hijau, kini mengikuti aturan umum) */
+            /* MODIFIKASI: Tombol unduh laporan menjadi hijau dengan teks putih */
             .stButton > button[data-testid="stDownloadButton"] {
                 background-color: #4CAF50 !important; 
-                color: white !important;
+                color: white !important; /* Pastikan teksnya putih */
                 border: none !important;
             }
             .stButton > button[data-testid="stDownloadButton"]:hover {
                 background-color: #45a049 !important; 
             }
 
-            /* MODIFIKASI: Tombol sekunder menjadi hijau dengan latar belakang putih */
+            /* Tombol sekunder menjadi hijau dengan latar belakang putih */
             .stButton > button[kind="secondary"] {
                 background-color: #FFFFFF !important;
                 color: #4CAF50 !important; /* Green text */
@@ -566,3 +566,4 @@ if st.session_state.data is not None:
                 type="secondary" # Type secondary akan di-override oleh CSS kustom
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
+                
