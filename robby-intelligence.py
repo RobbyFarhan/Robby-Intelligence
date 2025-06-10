@@ -7,14 +7,14 @@ import io
 import requests
 import base64
 import plotly.io as pio
-from scipy import stats 
+from scipy import stats
 
 # --- KONFIGURASI HALAMAN & GAYA ---
 st.set_page_config(
     page_title="Media Intelligence Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="auto" # MODIFIKASI: Ubah ke 'auto' agar sidebar terlihat secara default
 )
 
 # --- FUNGSI UTAMA & LOGIKA ---
@@ -63,7 +63,7 @@ def detect_anomalies(df):
     
     # Hitung Z-score
     df_copy = df.copy() 
-    df_copy['z_score'] = pd.Series(stats.zscore(df_copy['Engagements'])) # MODIFIKASI: Pastikan Z-score dihitung dengan benar
+    df_copy['z_score'] = pd.Series(stats.zscore(df_copy['Engagements'])) 
     
     # Ambang batas Z-score untuk anomali (bisa disesuaikan)
     threshold = 2.5 
@@ -73,7 +73,6 @@ def detect_anomalies(df):
         return pd.DataFrame(), "Tidak ada anomali signifikan yang terdeteksi dalam data keterlibatan."
     
     anomaly_details = []
-    # MODIFIKASI: Batasi hingga 5 anomali teratas untuk prompt, tambahkan kondisi untuk kolom yang mungkin hilang
     for index, row in anomalies.head(5).iterrows(): 
         date_str = row['Date'].strftime('%Y-%m-%d') if 'Date' in row and pd.notna(row['Date']) else "Tanggal tidak tersedia"
         platform_str = row['Platform'] if 'Platform' in row and pd.notna(row['Platform']) else "N/A"
@@ -378,51 +377,50 @@ if st.session_state.data is None:
 # Tampilan Dasbor Utama
 if st.session_state.data is not None:
     df = st.session_state.data
-    st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
     
-    # MODIFIKASI: Menghapus kolom kedua yang sebelumnya digunakan untuk tombol "Buka AI Consultant"
-    col1 = st.columns(1)[0] # Hanya satu kolom
-    with col1:
+    # MODIFIKASI: Pindahkan informasi file terunggah dan tombol "Lihat Hasil Analisis Datamu!" ke sidebar
+    with st.sidebar:
+        st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
         if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
 
-    if not st.session_state.show_analysis:
         st.markdown("---")
-        if st.button("▶️ Lihat Hasil Analisis Datamu!", key="show_analysis_btn", use_container_width=True, type="primary"):
-            st.session_state.show_analysis = True
-            st.rerun()
+        if not st.session_state.show_analysis:
+            if st.button("▶️ Lihat Hasil Analisis Datamu!", key="show_analysis_btn", use_container_width=True, type="primary"):
+                st.session_state.show_analysis = True
+                st.rerun()
+        else: # MODIFIKASI: Tampilkan filter di sidebar setelah analisis ditampilkan
+            with st.expander("⚙️ Filter Data & Opsi Tampilan", expanded=True):
+                def get_multiselect(label, options):
+                    all_option = f"Pilih Semua {label}"
+                    selection = st.multiselect(label, [all_option] + options)
+                    if all_option in selection: return options
+                    return selection
 
-    if st.session_state.show_analysis:
-        st.markdown("---")
-        with st.expander("⚙️ Filter Data & Opsi Tampilan", expanded=True):
-            def get_multiselect(label, options):
-                all_option = f"Pilih Semua {label}"
-                selection = st.multiselect(label, [all_option] + options)
-                if all_option in selection: return options
-                return selection
-
-            min_date, max_date = df['Date'].min().date(), df['Date'].max().date()
-            fc1, fc2, fc3 = st.columns([2, 2, 3])
-            with fc1:
+                min_date, max_date = df['Date'].min().date(), df['Date'].max().date()
+                
+                # Menggunakan kolom tunggal di sidebar untuk filter
                 platform = get_multiselect("Platform", sorted(df['Platform'].unique()))
                 media_type = get_multiselect("Media Type", sorted(df['Media Type'].unique()))
-            with fc2:
                 sentiment = get_multiselect("Sentiment", sorted(df['Sentiment'].unique()))
                 location = get_multiselect("Location", sorted(df['Location'].unique()))
-            with fc3:
                 date_range = st.date_input("Rentang Tanggal", (min_date, max_date), min_date, max_date, format="DD/MM/YYYY")
                 start_date, end_date = date_range if len(date_range) == 2 else (min_date, max_date)
+            
+    # Filter dan proses data
+    # MODIFIKASI: Pindahkan logika filtering ke luar block sidebar, karena variabel filter didefinisikan di sana
+    query = "(Date >= @start_date) & (Date <= @end_date)"
+    params = {'start_date': pd.to_datetime(start_date), 'end_date': pd.to_datetime(end_date)}
+    if platform: query += " & Platform in @platform"; params['platform'] = platform
+    if sentiment: query += " & Sentiment in @sentiment"; params['sentiment'] = sentiment
+    if media_type: query += " & `Media Type` in @media_type"; params['media_type'] = media_type
+    if location: query += " & Location in @location"; params['location'] = location
+    filtered_df = df.query(query, local_dict=params)
 
-        # Filter dan proses data
-        query = "(Date >= @start_date) & (Date <= @end_date)"
-        params = {'start_date': pd.to_datetime(start_date), 'end_date': pd.to_datetime(end_date)}
-        if platform: query += " & Platform in @platform"; params['platform'] = platform
-        if sentiment: query += " & Sentiment in @sentiment"; params['sentiment'] = sentiment
-        if media_type: query += " & `Media Type` in @media_type"; params['media_type'] = media_type
-        if location: query += " & Location in @location"; params['location'] = location
-        filtered_df = df.query(query, local_dict=params)
-
+    if st.session_state.show_analysis:
+        st.markdown("---") # Garis pemisah visual
+        
         # Tampilan Grafik & AI
         charts_to_display = [
             {"key": "sentiment", "title": "Analisis Sentimen"},
@@ -499,7 +497,7 @@ if st.session_state.data is not None:
         st.markdown("---")
         with st.container(border=True):
             st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True)
-            c1, c2, c3 = st.columns(3) # MODIFIKASI: Menambahkan kolom ketiga untuk anomali
+            c1, c2, c3 = st.columns(3)
             with c1:
                 st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
                 if st.button("Buat Ringkasan", use_container_width=True, type="primary"):
@@ -513,7 +511,7 @@ if st.session_state.data is not None:
                         best_platform = filtered_df.groupby('Platform')['Engagements'].sum().idxmax() if not filtered_df.empty else "N/A"
                         st.session_state.post_idea = get_ai_insight(f"Buat satu ide postingan untuk platform {best_platform}, termasuk visual & tagar.")
                 st.info(st.session_state.post_idea or "Klik 'Buat Ide Postingan' untuk mendapatkan saran konten baru yang inovatif.")
-            with c3: # MODIFIKASI: Kolom baru untuk wawasan anomali
+            with c3:
                 st.markdown("<h4>🚨 Wawasan Anomali</h4>", unsafe_allow_html=True)
                 if st.button("Deteksi & Buat Wawasan Anomali", use_container_width=True, type="primary"):
                     with st.spinner("Mendeteksi anomali..."):
