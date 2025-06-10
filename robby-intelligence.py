@@ -566,4 +566,3 @@ if st.session_state.data is not None:
                 type="secondary" # Type secondary akan di-override oleh CSS kustom
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
-                
