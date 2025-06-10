@@ -416,12 +416,12 @@ if st.session_state.data is None:
 if st.session_state.data is not None:
     df = st.session_state.data
     
-    # Tampilkan tombol "Lihat Hasil Analisis Datamu!" di halaman utama jika analisis belum ditampilkan
+    # Tampilkan tombol "Lanjut" di halaman utama jika analisis belum ditampilkan
     if not st.session_state.show_analysis:
         st.markdown("---")
         c_btn1, c_btn2, c_btn3 = st.columns([1,2,1])
         with c_btn2:
-            if st.button("▶️ Lihat Hasil Analisis Datamu!", key="show_analysis_btn", use_container_width=True, type="primary"):
+            if st.button(" Lanjut", key="show_analysis_btn", use_container_width=True, type="primary"):
                 st.session_state.show_analysis = True
                 st.rerun()
     
