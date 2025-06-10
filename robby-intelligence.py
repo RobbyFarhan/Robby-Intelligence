@@ -18,13 +18,13 @@ st.set_page_config(
 
 # --- FUNGSI UTAMA & LOGIKA ---
 
+
 def configure_gemini_api():
     """
     Mengkonfigurasi API Gemini menggunakan kunci API.
     Dalam aplikasi produksi, gunakan st.secrets.
     """
-    # Pastikan API Key ini adalah yang valid, atau gunakan st.secrets
-    api_key = "AIzaSyC0VUu6xTFIwH3a2R2tbhyu4O8m1ICxn4" 
+    api_key = "AIzaSyC0VUu6xTFIwH3aP2R7tbhyu4O8m1ICxn4"
     if not api_key:
         st.warning("API Key Gemini tidak ditemukan. Beberapa fitur AI mungkin tidak berfungsi.")
         return False
@@ -52,6 +52,7 @@ def get_ai_insight(prompt, model_name='gemini-2.0-flash'):
     except Exception as e:
         st.error(f"Error saat memanggil model {model_name}: {e}.")
         return "Gagal membuat wawasan: Terjadi masalah koneksi atau API."
+l
 
 def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_insights, chart_figures_dict, charts_to_display_info):
     """
