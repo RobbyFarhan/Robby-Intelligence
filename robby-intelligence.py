@@ -402,7 +402,7 @@ if st.session_state.data is None:
     c1, c2, c3 = st.columns([1,2,1]) 
     with c2:
         with st.container(border=False):
-            st.markdown("### ☁️ Unggah File CSV Anda")
+            st.markdown("### ☁️ Unggah File CSV Kamu dibawah!")
             uploaded_file = st.file_uploader("Pastikan file memiliki kolom 'Date', 'Engagements', 'Sentiment', 'Platform', 'Media Type', 'Location', dll.", type="csv", label_visibility="collapsed")
             if uploaded_file:
                 st.session_state.data = parse_csv(uploaded_file)
@@ -540,12 +540,12 @@ if st.session_state.data is not None:
         # Wawasan Umum & Unduh
         st.markdown("---")
         with st.container(border=True):
-            st.markdown("<h3>🧠 Insight Lanjutan </h3>", unsafe_allow_html=True)
+            st.markdown("<h3> >>> Next Step!</h3>", unsafe_allow_html=True)
             st.markdown('<div class="insight-hub-container">', unsafe_allow_html=True)
             
             # Ringkasan Strategi Kampanye
             st.markdown('<div class="insight-hub-item">', unsafe_allow_html=True)
-            st.markdown("<h4>📝 Ringkasan Strategi Kampanye Anda</h4>", unsafe_allow_html=True)
+            st.markdown("<h4>📝 Ringkasan Strategi </h4>", unsafe_allow_html=True)
             if st.button("Buat Ringkasan", use_container_width=True, type="primary", key="btn_summary"):
                 with st.spinner("Membuat ringkasan..."):
                     st.session_state.campaign_summary = get_ai_insight(f"Data: {filtered_df.describe().to_json()}. Buat ringkasan eksekutif dan 3 rekomendasi strategis.")
@@ -556,7 +556,7 @@ if st.session_state.data is not None:
             
         st.markdown("---")
         with st.container(border=True):
-            st.markdown("<h3>📄 Unduh Laporan Analisis</h3>", unsafe_allow_html=True)
+            st.markdown("<h3>📄 Download Laporan Analisis</h3>", unsafe_allow_html=True)
             if st.download_button(
                 "Unduh Laporan Lengkap (HTML)", 
                 data=generate_html_report(st.session_state.campaign_summary, st.session_state.chart_insights, st.session_state.chart_figures, charts_to_display), 
