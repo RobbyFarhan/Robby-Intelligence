@@ -237,6 +237,15 @@ def load_css():
                 color: #FF7043; /* Orange text */
                 border: 1px solid #FF7043; /* Orange border */
             }
+            /* Custom style for the download button to be green */
+            .stDownloadButton > button {
+                background-color: #28A745 !important; /* Green color */
+                color: white !important;
+                border: none !important;
+            }
+            .stDownloadButton > button:hover {
+                background-color: #218838 !important; /* Darker green on hover */
+            }
 
             /* Selectbox styles */
             .stSelectbox > div > div > div {
@@ -285,16 +294,20 @@ def load_css():
             }
 
             /* Floating AI Consultant Button */
-            .floating-button-container {
+            /* This is the div that contains the actual button */
+            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div[data-testid="stHorizontalBlock"] {
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
                 z-index: 1000; /* Ensure it stays on top */
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                border-radius: 50px; /* Make it more circular/pill-shaped */
+                border-radius: 50px; 
                 background-color: #FF7043; /* Match primary button color */
+                padding: 0; /* Remove internal padding */
             }
-            .floating-button-container button {
+            
+            /* Target the button inside the floating div */
+            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div[data-testid="stHorizontalBlock"] > button {
                 padding: 15px 25px !important; /* Increase padding for a larger button */
                 font-size: 1.1rem !important; /* Larger font size */
                 display: flex;
@@ -304,11 +317,13 @@ def load_css():
                 border: none !important;
                 background-color: #FF7043 !important; /* Ensure background matches */
                 color: white !important; /* Ensure text is white */
+                margin: 0; /* Remove default margin */
             }
-            .floating-button-container button:hover {
+            div[data-testid="stVerticalBlock"] > div:last-child > div:last-child > div[data-testid="stHorizontalBlock"] > button:hover {
                 background-color: #FF5722 !important; /* Darker on hover */
                 opacity: 1 !important; /* Ensure opacity change on hover */
             }
+
             .stAlert {
                 background-color: #FFF3E0;
                 color: #333333;
@@ -403,54 +418,22 @@ if st.session_state.data is None:
 # Tampilan Dasbor Utama
 if st.session_state.data is not None:
     df = st.session_state.data
-    # Changed: Merged "Hapus File & Reset" into uploaded file info
+    
+    # Moved "Hapus File & Reset" inside uploaded file info container
     with st.container(border=True):
         st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
-        if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
+        if st.button("Hapus File & Reset", key="clear_file_btn_in_info", use_container_width=True, type="secondary"): # Changed key
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
     
-    # Floating AI Consultant Button
-    st.markdown(
-        """
-        <div class="floating-button-container">
-            <button id="open_chat_fab">💬 Buka AI Consultant</button>
-        </div>
-        """, unsafe_allow_html=True
-    )
-    # Add JavaScript to handle the click event for the custom HTML button
-    st.markdown(
-        """
-        <script>
-            const fabButton = document.getElementById('open_chat_fab');
-            if (fabButton) {
-                fabButton.onclick = () => {
-                    // This simulates a click on the Streamlit button
-                    // which must be rendered in the Python code
-                    const streamlitButton = window.parent.document.querySelector('[data-testid="stButton"] button[key="open_chat_btn"]');
-                    if (streamlitButton) {
-                        streamlitButton.click();
-                    }
-                };
-            }
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    # The actual Streamlit button that gets clicked by the JS
-    # This button is hidden using CSS to avoid duplication
-    if st.button("💬 Buka AI Consultant", key="open_chat_btn", type="primary"):
+    # Floating AI Consultant Button - Directly trigger the dialog
+    # Using a unique key and an empty string for the label makes it 'invisible'
+    # but still generates the button element Streamlit needs to be found by CSS
+    if st.button("💬 Buka AI Consultant", key="open_chat_fab_trigger", type="primary"):
         df_summary_for_chat = df.describe(include='all').to_string()
         run_consultant_chat(df_summary_for_chat)
-    # Hide the actual Streamlit button using CSS for the FAB
-    st.markdown("""
-        <style>
-            #open_chat_btn {
-                display: none;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+    # The actual button is styled by CSS to be floating and visible.
+    # The empty label ensures no duplicate text appears.
 
 
     if not st.session_state.show_analysis:
@@ -589,6 +572,6 @@ if st.session_state.data is not None:
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
                 use_container_width=True,
-                type="secondary"
+                type="secondary" # This type will be overridden by custom CSS for green
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
