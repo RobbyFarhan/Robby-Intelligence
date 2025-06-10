@@ -23,7 +23,8 @@ def configure_gemini_api():
     Mengkonfigurasi API Gemini menggunakan kunci API.
     Dalam aplikasi produksi, gunakan st.secrets.
     """
-    api_key = "AIzaSyC0VUu6xTFIwH3a2R2tbhyu4O8m1ICxn4" # Replace with st.secrets["GEMINI_API_KEY"] in production
+    # Pastikan API Key ini adalah yang valid, atau gunakan st.secrets
+    api_key = "AIzaSyC0VUu6xTFIwH3a2R2tbhyu4O8m1ICxn4" 
     if not api_key:
         st.warning("API Key Gemini tidak ditemukan. Beberapa fitur AI mungkin tidak berfungsi.")
         return False
@@ -134,6 +135,7 @@ def load_css():
     st.markdown("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
+            @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css'); /* For icon */
             
             /* UI Simplicity: Main background colors */
             body { 
@@ -290,35 +292,34 @@ def load_css():
                 color: #333333; /* Darker modebar icons */
             }
 
-            /* Floating AI Consultant Button - using a wrapper div */
-            #ai-consultant-button-wrapper {
+            /* Floating AI Consultant Button - using a custom wrapper */
+            #ai-consultant-fab-container {
                 position: fixed;
-                right: 20px; /* Adjust as needed */
-                top: 50%; /* Center vertically */
-                transform: translateY(-50%); /* Adjust for true vertical centering */
-                z-index: 9999; /* Ensure it's on top */
-                /* Add a bit of padding to ensure the button doesn't hug the edge */
-                padding: 10px; 
+                right: 20px; /* Jarak dari kanan */
+                top: 50%; /* Pindah ke tengah vertikal */
+                transform: translateY(-50%); /* Menyesuaikan posisi agar benar-benar di tengah */
+                z-index: 9999; /* Pastikan di atas elemen lain */
             }
 
-            #ai-consultant-button-wrapper .stButton > button {
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                border-radius: 50px !important; 
-                background-color: #FF7043 !important; /* Primary orange */
-                color: white !important; /* Ensure text is white */
-                padding: 15px 25px !important; /* Increase padding for a larger button */
-                font-size: 1.1rem !important; /* Larger font size */
+            #ai-consultant-fab-container .fab-button {
+                background-color: #FF7043; /* Orange color */
+                color: white;
+                border: none;
+                border-radius: 50%; /* Membuat tombol bulat */
+                width: 60px; /* Ukuran lebar */
+                height: 60px; /* Ukuran tinggi */
                 display: flex;
+                justify-content: center;
                 align-items: center;
-                gap: 8px;
-                border: none !important;
-                margin: 0; /* Remove any default margins */
+                font-size: 1.8rem; /* Ukuran ikon */
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Bayangan */
+                transition: background-color 0.3s ease, transform 0.2s ease;
             }
-            
-            /* Ensure hover effect for the floating button */
-            #ai-consultant-button-wrapper .stButton > button:hover {
-                background-color: #FF5722 !important; /* Darker on hover */
-                opacity: 1 !important; /* Ensure opacity change on hover */
+
+            #ai-consultant-fab-container .fab-button:hover {
+                background-color: #FF5722; /* Darker orange on hover */
+                transform: translateY(-50%) scale(1.05); /* Sedikit membesar saat hover */
             }
 
             .stAlert {
@@ -419,72 +420,44 @@ if st.session_state.data is not None:
     # Moved "Hapus File & Reset" inside uploaded file info container
     with st.container(border=True):
         st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
-        if st.button("Hapus File & Reset", key="clear_file_btn_in_info", use_container_width=True, type="secondary"): # Changed key
+        if st.button("Hapus File & Reset", key="clear_file_btn_in_info", use_container_width=True, type="secondary"): 
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
     
-    # --- Floating AI Consultant Button ---
-    # We will use a dedicated markdown element for this button to give it a predictable HTML structure
-    st.markdown("""
-        <div id="ai-consultant-button-wrapper">
-            <button data-testid="stButton-primary">💬 Buka AI Consultant</button>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Now, trigger the dialog when this specific button is clicked.
-    # We need to use JavaScript to detect the click on the HTML button and then trigger a Streamlit rerun.
-    # This is a common workaround for highly custom floating elements.
-    st.write(
+    # --- Floating AI Consultant Button (HTML + JS Trigger) ---
+    # Container for the floating action button
+    st.markdown(
         """
-        <script>
-            const button = window.parent.document.querySelector('#ai-consultant-button-wrapper button');
-            if (button) {
-                button.onclick = function() {
-                    const streamlitIframe = window.parent.document.querySelector('iframe[title="streamlit_app"]');
-                    if (streamlitIframe) {
-                        // Send a message to the Streamlit app to trigger the dialog
-                        streamlitIframe.contentWindow.postMessage({ type: 'streamlit:trigger_dialog' }, '*');
-                    }
-                };
-            }
-        </script>
+        <div id="ai-consultant-fab-container">
+            <button class="fab-button" onclick="
+                // Find the hidden Streamlit button by its testid/key
+                const hiddenButton = window.parent.document.querySelector('button[data-testid=\"stButton-secondary\"][aria-label=\"TRIGGER_AI_CONSULTANT_DIALOG\"]');
+                if (hiddenButton) {
+                    hiddenButton.click(); // Programmatically click the hidden Streamlit button
+                }
+            ">
+                <i class="fas fa-robot"></i> </button>
+        </div>
         """,
         unsafe_allow_html=True
     )
 
-    # Listen for messages from the JavaScript to open the dialog
-    if "dialog_triggered" not in st.session_state:
-        st.session_state.dialog_triggered = False
-
-    # This part listens for the message sent from the JavaScript
-    # Note: Streamlit's messaging system isn't directly exposed for this,
-    # so we'll simulate a click by checking a session state flag that JS *would* set
-    # if direct JS interaction was easier. For this simple case, we'll rely on the
-    # button being rendered and then triggering the dialog in the next rerun.
-    # A more robust solution for direct JS interaction would involve a custom component.
-
-    # Instead of complex JS messaging, we'll simply check if the main app state
-    # is ready to show the dialog after the button *might* have been clicked.
-    # This is less ideal for immediate response but works within Streamlit's cycle.
-    
-    # The actual dialog trigger should still be here, linked to an internal Streamlit mechanism.
-    # Given the previous issues, the most reliable way to open a dialog is through a native Streamlit button.
-    # The floating div is purely for visual placement. The actual click detection is still hard.
-    # Let's revert to a *hidden* Streamlit button for the actual dialog trigger,
-    # and use the floating HTML button to *visually represent* that trigger.
-    
-    # Hidden Streamlit button to trigger the dialog
-    if st.button("TRIGGER_AI_CONSULTANT_DIALOG", key="hidden_dialog_trigger", type="secondary", help="Do not remove this button, it is for internal AI consultant triggering.",
-                 args=[], kwargs={}, disabled=False): # Dummy button, this will be hidden by CSS
+    # Hidden Streamlit button to actually trigger the dialog.
+    # This button is hidden by CSS, and its click is simulated by the JS in the FAB.
+    if st.button("TRIGGER_AI_CONSULTANT_DIALOG", key="hidden_dialog_trigger", type="secondary", help="Internal button for AI consultant dialog, please do not remove.", disabled=False, use_container_width=False):
         df_summary_for_chat = df.describe(include='all').to_string()
         run_consultant_chat(df_summary_for_chat)
     
-    # CSS to hide the dummy Streamlit button, but keep its functionality
+    # CSS to ensure the hidden button is *really* hidden
     st.markdown("""
         <style>
             /* Hide the actual Streamlit button that triggers the dialog */
-            button[data-testid="stButton-secondary"][kind="secondary"] {
+            button[data-testid="stButton-secondary"][aria-label="TRIGGER_AI_CONSULTANT_DIALOG"] {
                 display: none !important;
+                visibility: hidden !important;
+                position: absolute !important;
+                top: -9999px !important;
+                left: -9999px !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -626,7 +599,6 @@ if st.session_state.data is not None:
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
                 use_container_width=True,
-                type="secondary" # This type will be overridden by custom CSS for green
+                type="secondary" 
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
-                    
