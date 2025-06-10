@@ -18,13 +18,12 @@ st.set_page_config(
 
 # --- FUNGSI UTAMA & LOGIKA ---
 
-
 def configure_gemini_api():
     """
     Mengkonfigurasi API Gemini menggunakan kunci API.
     Dalam aplikasi produksi, gunakan st.secrets.
     """
-    api_key = "AIzaSyC0VUu6xTFIwH3aP2R7tbhyu4O8m1ICxn4"
+    api_key = "AIzaSyC0VUu6xTFIwH3aP2R7tbhyu4O8m1ICxn4" # Replace with st.secrets["GEMINI_API_KEY"] in production
     if not api_key:
         st.warning("API Key Gemini tidak ditemukan. Beberapa fitur AI mungkin tidak berfungsi.")
         return False
@@ -52,7 +51,6 @@ def get_ai_insight(prompt, model_name='gemini-2.0-flash'):
     except Exception as e:
         st.error(f"Error saat memanggil model {model_name}: {e}.")
         return "Gagal membuat wawasan: Terjadi masalah koneksi atau API."
-l
 
 def generate_html_report(campaign_summary, post_idea, anomaly_insight, chart_insights, chart_figures_dict, charts_to_display_info):
     """
@@ -136,12 +134,9 @@ def load_css():
     st.markdown("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
-            @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css'); /* For icon */
             
             /* UI Simplicity: Main background colors */
-            body { 
-                background-color: #FFFFFF !important; 
-            } 
+            body { background-color: #FFFFFF !important; } 
             .stApp { 
                 background-color: #F8F8F8; /* Light grey background */
                 color: #333333; /* Darker text for readability */
@@ -154,6 +149,7 @@ def load_css():
                 margin-bottom: 2rem; 
             }
             .main-header h1 { 
+                /* UI Simplicity: Orange gradient for main title */
                 background: -webkit-linear-gradient(45deg, #FF7043, #FF9800); /* Orange shades */
                 -webkit-background-clip: text; 
                 -webkit-text-fill-color: transparent; 
@@ -237,15 +233,6 @@ def load_css():
                 color: #FF7043; /* Orange text */
                 border: 1px solid #FF7043; /* Orange border */
             }
-            /* Custom style for the download button to be green */
-            .stDownloadButton > button {
-                background-color: #28A745 !important; /* Green color */
-                color: white !important;
-                border: none !important;
-            }
-            .stDownloadButton > button:hover {
-                background-color: #218838 !important; /* Darker green on hover */
-            }
 
             /* Selectbox styles */
             .stSelectbox > div > div > div {
@@ -291,45 +278,6 @@ def load_css():
             /* Plotly chart font color adjustment for the white background */
             .js-plotly-plot .plotly .modebar-container {
                 color: #333333; /* Darker modebar icons */
-            }
-
-            /* Floating AI Consultant Button - using a custom wrapper */
-            #ai-consultant-fab-container {
-                position: fixed;
-                right: 20px; /* Jarak dari kanan */
-                top: 50%; /* Pindah ke tengah vertikal */
-                transform: translateY(-50%); /* Menyesuaikan posisi agar benar-benar di tengah */
-                z-index: 9999; /* Pastikan di atas elemen lain */
-            }
-
-            #ai-consultant-fab-container .fab-button {
-                background-color: #FF7043; /* Orange color */
-                color: white;
-                border: none;
-                border-radius: 50%; /* Membuat tombol bulat */
-                width: 60px; /* Ukuran lebar */
-                height: 60px; /* Ukuran tinggi */
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-size: 1.8rem; /* Ukuran ikon */
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Bayangan */
-                transition: background-color 0.3s ease, transform 0.2s ease;
-            }
-
-            #ai-consultant-fab-container .fab-button:hover {
-                background-color: #FF5722; /* Darker orange on hover */
-                transform: translateY(-50%) scale(1.05); /* Sedikit membesar saat hover */
-            }
-
-            .stAlert {
-                background-color: #FFF3E0;
-                color: #333333;
-                border-left: 5px solid #FFAB40;
-            }
-            .stAlert [data-testid="stMarkdownContainer"] p {
-                color: #333333;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -417,51 +365,17 @@ if st.session_state.data is None:
 # Tampilan Dasbor Utama
 if st.session_state.data is not None:
     df = st.session_state.data
+    st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
     
-    # Moved "Hapus File & Reset" inside uploaded file info container
-    with st.container(border=True):
-        st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
-        if st.button("Hapus File & Reset", key="clear_file_btn_in_info", use_container_width=True, type="secondary"): 
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
-    
-    # --- Floating AI Consultant Button (HTML + JS Trigger) ---
-    # Container for the floating action button
-    st.markdown(
-        """
-        <div id="ai-consultant-fab-container">
-            <button class="fab-button" onclick="
-                // Find the hidden Streamlit button by its testid/key
-                const hiddenButton = window.parent.document.querySelector('button[data-testid=\"stButton-secondary\"][aria-label=\"TRIGGER_AI_CONSULTANT_DIALOG\"]');
-                if (hiddenButton) {
-                    hiddenButton.click(); // Programmatically click the hidden Streamlit button
-                }
-            ">
-                <i class="fas fa-robot"></i> </button>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Hidden Streamlit button to actually trigger the dialog.
-    # This button is hidden by CSS, and its click is simulated by the JS in the FAB.
-    if st.button("TRIGGER_AI_CONSULTANT_DIALOG", key="hidden_dialog_trigger", type="secondary", help="Internal button for AI consultant dialog, please do not remove.", disabled=False, use_container_width=False):
-        df_summary_for_chat = df.describe(include='all').to_string()
-        run_consultant_chat(df_summary_for_chat)
-    
-    # CSS to ensure the hidden button is *really* hidden
-    st.markdown("""
-        <style>
-            /* Hide the actual Streamlit button that triggers the dialog */
-            button[data-testid="stButton-secondary"][aria-label="TRIGGER_AI_CONSULTANT_DIALOG"] {
-                display: none !important;
-                visibility: hidden !important;
-                position: absolute !important;
-                top: -9999px !important;
-                left: -9999px !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+    with col2:
+        if st.button("💬 Buka AI Consultant", key="open_chat_btn", use_container_width=True, type="primary"):
+            df_summary_for_chat = df.describe(include='all').to_string()
+            run_consultant_chat(df_summary_for_chat)
 
 
     if not st.session_state.show_analysis:
@@ -542,9 +456,9 @@ if st.session_state.data is not None:
                     if fig:
                         st.session_state.chart_figures[chart["key"]] = fig
                         fig.update_layout(
-                            paper_bgcolor='#FFFFFF', 
-                            plot_bgcolor='#FFFFFF',  
-                            font_color='#333333',          
+                            paper_bgcolor='#FFFFFF', # White background for charts on orange/white theme
+                            plot_bgcolor='#FFFFFF',  # White plot area
+                            font_color='#333333',          # Dark font for readability
                             legend_title_text=''
                         )
                         st.plotly_chart(fig, use_container_width=True)
@@ -600,6 +514,6 @@ if st.session_state.data is not None:
                 file_name="Laporan_Media_Intelligence.html", 
                 mime="text/html", 
                 use_container_width=True,
-                type="secondary" 
+                type="secondary"
             ):
                 st.success("Laporan berhasil dibuat dan siap diunduh!")
