@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Media Intelligence Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed" # MODIFIKASI: Ubah kembali ke 'collapsed'
+    initial_sidebar_state="auto" # MODIFIKASI: Pastikan sidebar bisa muncul secara otomatis
 )
 
 # --- FUNGSI UTAMA & LOGIKA ---
@@ -378,7 +378,6 @@ if st.session_state.data is None:
 if st.session_state.data is not None:
     df = st.session_state.data
     
-    # MODIFIKASI: Pindahkan informasi file terunggah dan tombol "Lihat Hasil Analisis Datamu!" ke sidebar
     # Tampilkan tombol "Lihat Hasil Analisis Datamu!" di halaman utama jika analisis belum ditampilkan
     if not st.session_state.show_analysis:
         st.markdown("---")
@@ -386,6 +385,8 @@ if st.session_state.data is not None:
         with c_btn2:
             if st.button("▶️ Lihat Hasil Analisis Datamu!", key="show_analysis_btn", use_container_width=True, type="primary"):
                 st.session_state.show_analysis = True
+                # MODIFIKASI: Streamlit harusnya secara otomatis membuka sidebar ketika ada konten
+                # di dalamnya setelah reran. Kita tidak perlu secara eksplisit memanggil st.sidebar.expanded().
                 st.rerun()
     
     # MODIFIKASI: Tampilkan sidebar hanya jika analisis telah dimulai
@@ -394,6 +395,7 @@ if st.session_state.data is not None:
             st.markdown(f"""<div class="uploaded-file-info"><h3>📂 File Berhasil Terunggah! ✅️</h3><p><strong>Nama File:</strong> {st.session_state.last_uploaded_file_name}</p></div>""", unsafe_allow_html=True)
             if st.button("Hapus File & Reset", key="clear_file_btn", use_container_width=True, type="secondary"):
                 for key in list(st.session_state.keys()): del st.session_state[key]
+                st.experimental_set_query_params() # MODIFIKASI: Hapus query params jika ada, untuk reset yang lebih bersih
                 st.rerun()
 
             st.markdown("---")
